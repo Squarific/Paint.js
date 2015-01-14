@@ -225,11 +225,11 @@ Paint.prototype.tools = {
 		// Get the coordinates relative to the canvas
 		var targetCoords = paint.getCoords(event);
 
-		if (event.type == "mousedown" && !paint.lastLinePoint) {
+		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastLinePoint) {
 			paint.lastLinePoint = targetCoords;
 		}
 
-		if (event.type == "mouseup") {
+		if (event.type == "mouseup" || event.type == "touchend") {
 			// If mouseup is on the same point as mousedown we switch behaviour by making
 			// a line between two clicks instead of dragging
 			if (paint.lastLinePoint[0] == targetCoords[0] && paint.lastLinePoint[1] == targetCoords[1]) {
@@ -250,7 +250,7 @@ Paint.prototype.tools = {
 			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
 		}
 
-		if (event.type == "mousemove" && paint.lastLinePoint) {
+		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastLinePoint) {
 			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
 
 			var context = paint.effectsCanvasCtx;
@@ -281,15 +281,15 @@ Paint.prototype.tools = {
 		// Get the coordinates relative to the canvas
 		var targetCoords = paint.getCoords(event);
 
-		if (event.type == "mousedown" && !paint.lastLinePoint) {
+		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastLinePoint) {
 			paint.lastBrushPoint = targetCoords;
 		}
 
-		if (event.type == "mouseup") {
+		if (event.type == "mouseup" || event.type == "touchend") {
 			delete paint.lastBrushPoint;
 		}
 
-		if (event.type == "mousemove") {
+		if (event.type == "mousemove" || event.type == "touchmove") {
 			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
 			var context = paint.effectsCanvasCtx;
 			context.beginPath();
