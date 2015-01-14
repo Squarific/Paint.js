@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html style="padding:0; margin:0; height:100%;">
+	<head>
+		<link rel="stylesheet" href="spectrum.css">
+		<link rel="stylesheet" href="paint.css">
+		<link rel="stylesheet" href="control.css">
+		<title>Paint demo</title>
+		<meta name="viewport" content="width=device-width">
+		<meta name="description" content="Squarific Paint.">
+	</head>
+	<body style="position:relative; padding:0; margin:0; min-height: 100%;">
+		<div id="fullscreen" style="position:absolute; left:0; right:0; top:0; bottom:0;"></div>
+		<script src="jquery.js"></script>
+		<script src="Paint.min.js"></script>
+		<script type="text/javascript">
+			var paint = new Paint(document.getElementById("fullscreen"));
+		</script>
+	</body>
+</html>
