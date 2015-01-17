@@ -22,7 +22,8 @@ function Paint (container, settings) {
 }
 
 Paint.prototype.defaultSettings = {
-	
+	maxSize: 50,
+	maxLineLength: 200
 };
 
 Paint.prototype.addCanvas = function addCanvas (container) {
@@ -87,11 +88,17 @@ Paint.prototype.addUserDrawing = function addUserDrawing (drawing) {
 	});
 };
 
-// Put the drawing on the given layer ('public', 'local', 'effects')
-Paint.prototype.drawDrawing = function (layer, drawing) {
-	if (typeof this.drawFunctions[drawing.type] == "function") {
-		this.drawFunctions[drawing.type](this[layer].context, drawing, this[layer]);
+// Put the drawings on the given layer ('public', 'local', 'effects')
+Paint.prototype.drawDrawings = function drawDrawings (layer, drawings) {
+	for (var dKey = 0; dKey < drawings.length; dKey++) {
+		this.drawFunctions[drawings[dKey].type](this[layer].context, drawings[dKey], this[layer]);
 	}
+	this[layer].redraw();
+};
+
+// Put the drawing on the given layer ('public', 'local', 'effects')
+Paint.prototype.drawDrawing = function drawDrawing (layer, drawing) {
+	this.drawFunctions[drawing.type](this[layer].context, drawing, this[layer]);
 	this[layer].redraw();
 };
 
@@ -118,7 +125,7 @@ Paint.prototype.changeColor = function changeColor (color) {
 };
 
 Paint.prototype.changeToolSize = function changeToolSize (size) {
-	if (size > 50) size = 50;
+	if (size > this.settings.maxSize) size = this.settings.maxSize;
 	this.current_size = size;
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 };
@@ -238,10 +245,10 @@ Paint.prototype.tools = {
 
 			paint.addUserDrawing({
 				type: "line",
-				x: paint.lastLinePoint[0],
-				y: paint.lastLinePoint[1],
-				x1: targetCoords[0],
-				y1: targetCoords[1],
+				x: paint.local.leftTopX + paint.lastLinePoint[0],
+				y: paint.local.leftTopY + paint.lastLinePoint[1],
+				x1: paint.local.leftTopX + targetCoords[0],
+				y1: paint.local.leftTopY +targetCoords[1],
 				size: paint.current_size * 2,
 				color: paint.current_color
 			});
@@ -301,18 +308,18 @@ Paint.prototype.tools = {
 				if (paint.utils.sqDistance(paint.lastBrushPoint, targetCoords) < (paint.current_size / 2) * (paint.current_size / 2)) {
 					paint.addUserDrawing({
 						type: "brush",
-						x: targetCoords[0],
-						y: targetCoords[1],
+						x: paint.local.leftTopX + targetCoords[0],
+						y: paint.local.leftTopY + targetCoords[1],
 						size: paint.current_size,
 						color: paint.current_color
 					});
 				} else {
 					paint.addUserDrawing({
 						type: "line",
-						x: paint.lastBrushPoint[0],
-						y: paint.lastBrushPoint[1],
-						x1: targetCoords[0],
-						y1: targetCoords[1],
+						x: paint.local.leftTopX + paint.lastBrushPoint[0],
+						y: paint.local.leftTopY + paint.lastBrushPoint[1],
+						x1: paint.local.leftTopX + targetCoords[0],
+						y1: paint.local.leftTopY + targetCoords[1],
 						size: paint.current_size * 2,
 						color: paint.current_color
 					});
