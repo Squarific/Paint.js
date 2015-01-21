@@ -38,6 +38,23 @@ The above code will output the following when a line is drawn:
 	"drawing"
 	{type: "line", x: 4, y: 5, x1: 6, y1: 7, size: 10, color: "#ffaabb"}
 
+Methods
+=======
+
+	paint.drawDrawings(layer, drawingArray);
+	paint.drawDrawing(layer, drawing);
+
+These functions will put the drawings on the given layer. Layer can be 'public' or 'local'.
+
+	paint.changeTool(tool);
+	paint.changeColor(color);
+	paint.changeToolSize(size);
+
+These functions allow you to change the tool, color and size.
+Tool can be one of the following: "grab", "line", "brush" or "block"*
+
+*Block not yet implemented
+
 Events
 ======
 
