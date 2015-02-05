@@ -32,7 +32,7 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 	var effectC = container.appendChild(this.createCanvas("effect"));
 
 	this.public = new TiledCanvas(publicC);
-	this.local      = new TiledCanvas(localC);
+	this.local = new TiledCanvas(localC);
 	this.effectsCanvas = effectC;
 	this.effectsCanvasCtx = effectC.getContext("2d");
 
@@ -45,6 +45,11 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 	effectC.addEventListener("touchend", this.exectool.bind(this));
 
 	this.canvasArray = [publicC, localC, effectC];
+};
+
+Paint.prototype.clear = function clear () {
+	this.public.clear();
+	this.local.clear();
 };
 
 Paint.prototype.createCanvas = function createCanvas (name) {

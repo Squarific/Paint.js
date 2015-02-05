@@ -57,6 +57,10 @@ Tool can be one of the following: "grab", "line", "brush" or "block"*
 
 *Block not yet implemented
 
+	paint.clear();
+
+Clears all drawings.
+
 Events
 ======
 
