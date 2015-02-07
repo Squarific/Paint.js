@@ -302,6 +302,13 @@ Paint.prototype.tools = {
 
 		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastLinePoint) {
 			paint.lastBrushPoint = targetCoords;
+			paint.addUserDrawing({
+				type: "brush",
+				x: paint.local.leftTopX + targetCoords[0],
+				y: paint.local.leftTopY + targetCoords[1],
+				size: paint.current_size,
+				color: paint.current_color
+			});
 		}
 
 		if (event.type == "mouseup" || event.type == "touchend") {
