@@ -3,6 +3,8 @@ Paint.js
 
 A drawing app that can easily be used to create networked drawing apps.
 
+LICENSE: MIT
+
 Demo
 ====
 
@@ -95,3 +97,64 @@ Controls
 Controls can be added to
 
     paint.controlContainer; // Dom element that contains all controllers
+
+Adding new tools
+================
+
+If you want to add a new tool you have to do 2 things. Add a button and add a event handling function.
+
+## Adding the button ##
+
+The button will look like this:
+
+    {
+    	name: "toolName",
+    	type: "button",
+    	image: "images/icons/toolName.png",
+    	title: "Change tool to toolName",
+    	value: "toolNameFunction",
+    	action: this.changeTool.bind(this)
+    }
+
+This object should be added to the createControlArray function.
+
+## Adding the event handler ##
+
+The event handler looks like this:
+
+    function toolNameFunction (paint, event) {
+
+    }
+
+This function should be added to 'Paint.tools'.
+
+Possible events are: 
+
+	"remove"
+	
+	{type: "mousedown", ...}
+	{type: "mousemove", ...}
+	{type: "mouseup", ...}
+
+	{type: "touchstart", ...}
+	{type: "touchmove", ...}
+	{type: "touchend", ...}
+
+You can then use all methods on the paint object, some you will need are: 
+
+    // Returns the 'world' coordinates where the drawing should be at.
+    // This method takes in account the fact that the canvas could be moved
+    paint.getCoords(event);
+
+    // TiledCanvas objects for the last layer and the local layer
+    paint.public
+    paint.local
+
+    // The canavas and context on top of all other layers
+    paint.effectCanvas
+    paint.effectCanvasCtx
+
+Adding new drawing types
+========================
+
+TBA
