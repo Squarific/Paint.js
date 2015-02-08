@@ -142,8 +142,8 @@ Possible events are:
 
 You can then use all methods on the paint object, some you will need are: 
 
-    // Returns the 'world' coordinates where the drawing should be at.
-    // This method takes in account the fact that the canvas could be moved
+    // Returns the coordinates of the event relative to the canvas
+    // To get relative to the world, do + paint.layer.leftTopX and leftTopY
     paint.getCoords(event);
 
     // TiledCanvas objects for the last layer and the local layer

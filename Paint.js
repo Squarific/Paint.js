@@ -34,8 +34,12 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 
 	this.public = new TiledCanvas(publicC);
 	this.local = new TiledCanvas(localC);
+
 	this.effectsCanvas = effectC;
 	this.effectsCanvasCtx = effectC.getContext("2d");
+
+	this.publicCtx = publicC.getContext("2d");
+	this.localCtx = localC.getContext("2d");
 
 	effectC.addEventListener("mousedown", this.exectool.bind(this));
 	effectC.addEventListener("mousemove", this.exectool.bind(this));
@@ -89,7 +93,7 @@ Paint.prototype.redrawLoop = function redrawLoop () {
 		this.redrawLocals();
 	
 	delete this.drawDrawingTimeout;
-	delete thie.redrawLocalsNeeded;
+	delete this.redrawLocalsNeeded;
 };
 
 Paint.prototype.redrawLocals = function redrawLocals () {
@@ -133,10 +137,8 @@ Paint.prototype.drawDrawings = function drawDrawings (layer, drawings) {
 Paint.prototype.drawDrawing = function drawDrawing (layer, drawing) {
 	this.drawFunctions[drawing.type](this[layer].context, drawing, this[layer]);
 
-	if (this.redrawLayers)
-		this.redrawLayers[layer] = true;
-	else 
-		this.redrawLayers = {layer: true};
+	this.redrawLayers = this.redrawLayers || {};
+	this.redrawLayers[layer] = true;
 
 	if (!this.drawDrawingTimeout)
 		this.drawDrawingTimeout = setTimeout(this.redrawLoop.bind(this), 20);
@@ -171,6 +173,11 @@ Paint.prototype.changeToolSize = function changeToolSize (size) {
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 };
 
+Paint.prototype.setColor = function setColor (color) {
+	this.changeColor(color);
+	$(this.controls.byName["tool-color"].input).spectrum("set", this.current_color);
+};
+
 Paint.prototype.createControlArray = function createControlArray () {
 	return [{
 		name: "grab",
@@ -192,6 +199,13 @@ Paint.prototype.createControlArray = function createControlArray () {
 		image: "images/icons/brush.png",
 		title: "Change tool to brush",
 		value: "brush",
+		action: this.changeTool.bind(this)
+	}, {
+		name: "picker",
+		type: "button",
+		image: "images/icons/picker.png",
+		title: "Change tool to picker",
+		value: "picker",
 		action: this.changeTool.bind(this)
 	}, /*{
 		name: "block",
@@ -229,6 +243,23 @@ Paint.prototype.getCoords = function getCoords (event) {
 		relativeY = clientY - boundingBox.top;
 	return [relativeX, relativeY];
 };
+
+Paint.prototype.getColorAt = function getColorAt (point) {
+	for (var cKey = 0; cKey < this.canvasArray.length; cKey++) {
+		this.tempPixelCtx.drawImage(this.canvasArray[cKey], point[0], point[1], 1, 1, 0, 0, 1, 1);
+	}
+
+	var pixel = this.tempPixelCtx.getImageData(0, 0, 1, 1).data;
+
+	return this.rgbToHex(pixel[0], pixel[1], pixel[2]);
+};
+
+Paint.prototype.rgbToHex = function rgbToHex (r, g, b) {
+	var hex = ((r << 16) | (g << 8) | b).toString(16);
+	return "#" + ("000000" + hex).slice(-6);
+};
+
+Paint.prototype.tempPixelCtx = document.createElement("canvas").getContext("2d");
 
 // Tools, called on events
 Paint.prototype.tools = {
@@ -374,6 +405,32 @@ Paint.prototype.tools = {
 				}
 				paint.lastBrushPoint = targetCoords;
 			}
+		}
+	},
+	picker: function picker (paint, event) {
+		if (event == "remove") {
+			delete paint.picking;
+			paint.effectsCanvas.style.cursor = "";
+			return;
+		}
+
+		// Get the coordinates relative to the canvas
+		var targetCoords = paint.getCoords(event);
+
+		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.picking) {
+			paint.picking = true;
+			paint.setColor(paint.getColorAt(targetCoords));
+			paint.effectsCanvas.style.cursor = "crosshair";
+		}
+
+		if (event.type == "mouseup" || event.type == "touchend") {
+			delete paint.picking;
+			paint.effectsCanvas.style.cursor = "";
+		}
+
+		if (event.type == "mousemove" || event.type == "touchmove") {
+			if (paint.picking)
+				paint.setColor(paint.getColorAt(targetCoords));
 		}
 	},
 	block: function block (paint, event) {
