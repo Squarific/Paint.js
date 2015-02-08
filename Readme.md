@@ -154,6 +154,28 @@ You can then use all methods on the paint object, some you will need are:
     paint.effectCanvas
     paint.effectCanvasCtx
 
+### Template: ###
+
+	if (event == "remove") {
+		delete paint.lastPickerPoint;
+		return;
+	}
+
+	// Get the coordinates relative to the world
+	var targetCoords = paint.getCoords(event);
+
+	if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastPickerPoint) {
+		
+	}
+
+	if (event.type == "mouseup" || event.type == "touchend") {
+		
+	}
+
+	if (event.type == "mousemove" || event.type == "touchmove") {
+		
+	}
+
 Adding new drawing types
 ========================
 
