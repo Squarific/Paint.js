@@ -10,3 +10,11 @@
 .paint-canvas-public {
 	background-image: url("images/transparent.png");
 }
+
+.paint-selected-tool {
+	background:rgb(190, 190, 190);
+}
+
+.paint-selected-tool:hover {
+	background:rgb(180, 180, 180);
+}

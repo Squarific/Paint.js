@@ -117,6 +117,8 @@ The button will look like this:
     }
 
 This object should be added to the createControlArray function.
+You should also add your tools name to the toolButtons array.
+ToolName and toolNameFunction should be the same because of the selection state of the buttons.
 
 ## Adding the event handler ##
 

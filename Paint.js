@@ -10,8 +10,11 @@ function Paint (container, settings) {
 	this.controlContainer = container.appendChild(document.createElement("div"));
 	this.controlContainer.className = "control-container";
 	this.controls = new Controls(this.controlContainer, this.createControlArray());
+	this.toolButtons = ["grab", "line", "brush", "picker"];
 
 	// Set tool values
+	this.changeTool("brush");
+	this.changeColor("#000000")
 	this.current_tool = "brush";
 	this.current_color = "#000000";
 	this.current_size = 5;
@@ -159,6 +162,11 @@ Paint.prototype.changeTool = function changeTool (tool) {
 	this.exectool("remove");
 	this.current_tool = tool;
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
+
+	for (var k = 0; k < this.toolButtons.length; k++)
+		this.controls.byName[this.toolButtons[k]].input.classList.remove("paint-selected-tool");
+
+	this.controls.byName[tool].input.classList.add("paint-selected-tool");
 };
 
 Paint.prototype.changeColor = function changeColor (color) {
