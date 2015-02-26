@@ -6,7 +6,6 @@ function Paint (container, settings) {
 
 	this.addCanvas(container);
 	this.resize();
-	this.lastCanvas = this.effectsCanvas;
 
 	this.controlContainer = container.appendChild(document.createElement("div"));
 	this.controlContainer.className = "control-container";
@@ -54,6 +53,7 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 	effectC.addEventListener("touchend", this.exectool.bind(this));
 
 	this.canvasArray = [publicC, localC, effectC];
+	this.lastCanvas = localC;
 };
 
 Paint.prototype.newCanvasOnTop = function newCanvasOnTop (name) {

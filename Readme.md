@@ -67,7 +67,7 @@ Clears all drawings.
 
 	paint.newCanvasOnTop(name)
 
-Returns a canvas that will be automatically resized, it's .topLeftX and .topLeftY constantly updated to reflect it's 'world' coordinates and is added on top of the other canvasses. It will have a class of className = "paint-canvas paint-canvas-" + name;
+Returns a canvas that will be automatically resized, it's .topLeftX and .topLeftY constantly updated to reflect it's 'world' coordinates and is added on top of the other canvasses except the effect canvas. It will have a class of className = "paint-canvas paint-canvas-" + name;
 
 Events
 ======
