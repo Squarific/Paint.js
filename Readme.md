@@ -65,6 +65,10 @@ Tool can be one of the following: "grab", "line", "brush" or "block"*
 
 Clears all drawings.
 
+	paint.newCanvasOnTop(name)
+
+Returns a canvas that will be automatically resized, it's .topLeftX and .topLeftY constantly updated to reflect it's 'world' coordinates and is added on top of the other canvasses. It will have a class of className = "paint-canvas paint-canvas-" + name;
+
 Events
 ======
 
