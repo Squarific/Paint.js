@@ -65,6 +65,10 @@ Paint.prototype.newCanvasOnTop = function newCanvasOnTop (name) {
 	// Put it as new canvas, put it in the canvasarray and return
 	this.lastCanvas = canvas;
 	this.canvasArray.push(canvas);
+
+	// Invalidate canvas size
+	this.resize();
+
 	return canvas;
 };
 
@@ -309,8 +313,14 @@ Paint.prototype.tools = {
 		var relativeMotionX = paint.lastGrabCoords[0] - targetCoords[0],
 		    relativeMotionY = paint.lastGrabCoords[1] - targetCoords[1];
 
+		// Move both local and public tiledcanvas and set all canvas leftTopX/Y properties
 		paint.local.goto(paint.local.leftTopX + relativeMotionX, paint.local.leftTopY + relativeMotionY);
 		paint.public.goto(paint.public.leftTopX + relativeMotionX, paint.public.leftTopY + relativeMotionY);
+
+		for (var k = 0; k < this.canvasArray.length; k++) {
+			this.canvasArray[k].leftTopX = paint.public.leftTopX;
+			this.canvasArray[k].leftTopY = paint.public.leftTopY;
+		}
 
 		// Update last grab position
 		paint.lastGrabCoords = targetCoords;
