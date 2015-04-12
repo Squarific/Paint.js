@@ -104,13 +104,22 @@ Paint.prototype.redrawLocalDrawings = function redrawLocalDrawings () {
 	// Redraw the locals in the current loop
 	this.redrawLocalsNeeded = true;
 
+	// Only redraw every so often and not every change of the locals
 	if (!this.drawDrawingTimeout)
-		this.drawDrawingTimeout = setTimeout(this.redrawLoop.bind(this), 20);
+		this.drawDrawingTimeout = setTimeout(this.redrawTimeout.bind(this), 30);
+};
+
+Paint.prototype.redrawTimeout = function redrawTimeout () {
+	// Redraw in an animationframe
+	requestAnimationFrame(this.redrawLoop.bind(this));
 };
 
 Paint.prototype.redrawLoop = function redrawLoop () {
+	// Redraw after we ADD (!) to one of the layers
+	// or if we ADD/REMOVE from the local layer
+	// If you remove from another layer and call the redrawloop transparency issues may arrise
 	for (var layer in this.redrawLayers) {
-		this[layer].redraw();
+		this[layer].redraw(true);
 	}
 
 	if (this.redrawLocalsNeeded)
@@ -120,8 +129,11 @@ Paint.prototype.redrawLoop = function redrawLoop () {
 	delete this.redrawLocalsNeeded;
 };
 
-Paint.prototype.redrawLocals = function redrawLocals () {
+Paint.prototype.redrawLocals = function redrawLocals (noclear) {
 	// Force the redrawing of locals NOW
+
+	// TODO: Only clear the parts that were removed
+
 	this.local.clearAll();
 	this.localDrawings.forEach(this.drawDrawing.bind(this, "local"));
 }
@@ -154,7 +166,7 @@ Paint.prototype.drawDrawings = function drawDrawings (layer, drawings) {
 	for (var dKey = 0; dKey < drawings.length; dKey++) {
 		this.drawFunctions[drawings[dKey].type](this[layer].context, drawings[dKey], this[layer]);
 	}
-	this[layer].redraw();
+	this[layer].redraw(true);
 };
 
 // Put the drawing on the given layer ('public', 'local', 'effects')
@@ -165,7 +177,7 @@ Paint.prototype.drawDrawing = function drawDrawing (layer, drawing) {
 	this.redrawLayers[layer] = true;
 
 	if (!this.drawDrawingTimeout)
-		this.drawDrawingTimeout = setTimeout(this.redrawLoop.bind(this), 20);
+		this.drawDrawingTimeout = setTimeout(this.redrawLoop.bind(this), 30);
 };
 
 // User interaction on the canvas
