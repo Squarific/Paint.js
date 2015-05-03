@@ -1,10 +1,14 @@
 function TiledCanvas (canvas, settings) {
     this.canvas = canvas;
     this.ctx = this.canvas.getContext('2d');
+
     this.leftTopX = 0;
     this.leftTopY = 0;
+    this.zoom = 1; // 2 = two times zoomed in
+
     this.affecting = [[0, 0], [0, 0]];
     this.chunks = {};
+
     this.settings = this.normalizeDefaults(settings, this.defaultSettings);
     this.contextQueue = [];
     this.context = this.createContext();
@@ -44,9 +48,10 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
     if (!noclear) this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
     var startChunkX = Math.floor(this.leftTopX / this.settings.chunkSize),
-        endChunkX =  Math.ceil((this.leftTopX + this.canvas.width) / this.settings.chunkSize),
+        endChunkX   = Math.ceil((this.leftTopX + this.canvas.width / this.zoom) / this.settings.chunkSize),
         startChunkY = Math.floor(this.leftTopY / this.settings.chunkSize),
-        endChunkY = Math.ceil((this.leftTopY + this.canvas.height) / this.settings.chunkSize);
+        endChunkY   = Math.ceil((this.leftTopY + this.canvas.height / this.zoom) / this.settings.chunkSize);
+    
     for (var chunkX = startChunkX; chunkX < endChunkX; chunkX++) {
         for (var chunkY = startChunkY; chunkY < endChunkY; chunkY++) {
             this.drawChunk(chunkX, chunkY);
@@ -56,7 +61,7 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
 
 TiledCanvas.prototype.drawChunk = function drawChunk (chunkX, chunkY) {
     if (this.chunks[chunkX] && this.chunks[chunkX][chunkY]) {
-        this.ctx.drawImage(this.chunks[chunkX][chunkY].canvas, chunkX * this.settings.chunkSize - this.leftTopX, chunkY * this.settings.chunkSize - this.leftTopY);
+        this.ctx.drawImage(this.chunks[chunkX][chunkY].canvas, ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
     } else if(typeof this.requestUserChunk == "function") {
         this.requestChunk(chunkX, chunkY);
     }
@@ -65,6 +70,16 @@ TiledCanvas.prototype.drawChunk = function drawChunk (chunkX, chunkY) {
 TiledCanvas.prototype.goto = function goto (x, y) {
     this.leftTopX = x;
     this.leftTopY = y;
+    this.redraw();
+};
+
+TiledCanvas.prototype.relativeZoom = function relativeZoom (zoom) {
+    this.zoom *= zoom;
+    this.redraw();
+};
+
+TiledCanvas.prototype.absoluteZoom = function absoluteZoom (zoom) {
+    this.zoom = zoom;
     this.redraw();
 };
 
