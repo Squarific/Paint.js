@@ -1,11 +1,4 @@
-, {
-		name: "zoom-in",
-		type: "button",
-		image: "images/icons/zoomin.png",
-		title: "Zoom in",
-		value: 2,
-		action: this.zoom.bind(this)
-	}function Paint (container, settings) {
+function Paint (container, settings) {
 	this.eventHandlers = {};
 	this.settings = this.utils.merge(this.utils.copy(settings), this.defaultSettings);
 
