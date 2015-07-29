@@ -1,4 +1,11 @@
-function Paint (container, settings) {
+, {
+		name: "zoom-in",
+		type: "button",
+		image: "images/icons/zoomin.png",
+		title: "Zoom in",
+		value: 2,
+		action: this.zoom.bind(this)
+	}function Paint (container, settings) {
 	this.eventHandlers = {};
 	this.settings = this.utils.merge(this.utils.copy(settings), this.defaultSettings);
 
@@ -272,6 +279,13 @@ Paint.prototype.createControlArray = function createControlArray () {
 		value: 2,
 		action: this.zoom.bind(this)
 	}, {
+		name: "zoom-reset",
+		type: "button",
+		image: "images/icons/zoomreset.png",
+		title: "Reset zoom",
+		value: 1,
+		action: this.zoomAbsolute.bind(this)
+	}, {
 		name: "zoom-out",
 		type: "button",
 		image: "images/icons/zoomout.png",
@@ -291,6 +305,12 @@ Paint.prototype.createControlArray = function createControlArray () {
 Paint.prototype.zoom = function zoom (zoomFactor) {
 	this.public.relativeZoom(zoomFactor);
 	this.local.relativeZoom(zoomFactor);
+	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
+};
+
+Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
+	this.public.absoluteZoom(zoomFactor);
+	this.local.absoluteZoom(zoomFactor);
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 };
 
