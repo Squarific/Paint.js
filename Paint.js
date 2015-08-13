@@ -76,8 +76,8 @@ Paint.prototype.newCanvasOnTop = function newCanvasOnTop (name) {
 };
 
 Paint.prototype.clear = function clear () {
-	this.public.clearAll();
-	this.local.clearAll();
+	this.public.chunks = {};
+	this.local.chunks = {};
 
 	this.public.redraw();
 	this.local.redraw();
