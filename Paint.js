@@ -20,6 +20,7 @@ function Paint (container, settings) {
 	$(this.controls.byName["tool-color"].input).spectrum("set", this.current_color);
 
 	this.localDrawings = [];
+	this.paths = {};
 
 	window.addEventListener("resize", this.resize.bind(this));
 }
@@ -149,6 +150,24 @@ Paint.prototype.addPublicDrawing = function addPublicDrawing (drawing) {
 	this.drawDrawing("public", drawing);
 };
 
+Paint.prototype.addPath = function addPath (id, props) {
+	this.paths[id] = props;
+	this.paths[id].points = this.paths[id].points || [];
+};
+
+Paint.prototype.addPathPoint = function addPathPoint (id, point) {
+	if (!this.paths[id]) {
+		console.error("Path ", id, " not known. Can't add point.");
+		return;
+	}
+
+	this.paths[id].points.push(point);
+};
+
+Paint.prototype.removePath = function removePath (id) {
+	delete this.paths[id];
+};
+
 // Function that should be called when a new drawing is added
 // because of a user interaction. Calls the userdrawing event
 Paint.prototype.addUserDrawing = function addUserDrawing (drawing) {
@@ -159,6 +178,35 @@ Paint.prototype.addUserDrawing = function addUserDrawing (drawing) {
 		type: "userdrawing",
 		drawing: drawing,
 		removeDrawing: this.removeLocalDrawing.bind(this, drawing)
+	});
+};
+
+Paint.prototype.addUserPath = function addUserPath () {
+	this.addPath("localuser", {
+		color: this.current_color,
+		size: this.current_size
+	});
+
+	this.dispatchEvent({
+		type: "startuserpath",
+		props: this.paths.localuser
+	});
+};
+
+Paint.prototype.addUserPathPoint = function dispatchPathPoint (point) {
+	this.addPathPoint("localuser", point);
+
+	this.dispatchEvent({
+		type: "userpathpoint",
+		point: point
+	});
+};
+
+Paint.prototype.endUserPath = function endUserPath () {
+	this.removePath("localuser");
+
+	this.dispatchEvent({
+		type: "enduserpath"
 	});
 };
 
