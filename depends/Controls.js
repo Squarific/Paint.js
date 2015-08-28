@@ -177,12 +177,12 @@ Controls.prototype.constructors.color = function createControlInput (control) {
 				showAlpha: true,
 				showInput: true,
 				showInitial: true,
-				preferredFormat: "rgba",
+				preferredFormat: "rgb",
 				showPalette: true,
 				maxSelectionSize: 32,
 				clickoutFiresChange: true,		
 				move: function (color) {
-					control.action(color.toHexString());
+					control.action(color);
 				}
 			});
 		}
