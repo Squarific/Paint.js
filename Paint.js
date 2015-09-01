@@ -21,6 +21,7 @@ function Paint (container, settings) {
 
 	this.localDrawings = [];
 	this.paths = {};
+	this.localUserPaths = [];
 
 	window.addEventListener("resize", this.resize.bind(this));
 }
@@ -85,6 +86,7 @@ Paint.prototype.clear = function clear () {
 	this.public.chunks = {};
 	this.local.chunks = {};
 	this.paths = {};
+	this.localUserPaths = [];
 
 	this.goto(0, 0);
 
@@ -101,6 +103,8 @@ Paint.prototype.goto = function goto (worldX, worldY) {
 		paint.canvasArray[k].leftTopX = paint.public.leftTopX;
 		paint.canvasArray[k].leftTopY = paint.public.leftTopY;
 	}
+
+	paint.redrawPaths();
 };
 
 Paint.prototype.createCanvas = function createCanvas (name) {
@@ -148,7 +152,7 @@ Paint.prototype.redrawLoop = function redrawLoop () {
 	delete this.redrawLocalsNeeded;
 };
 
-// Redraws the path right before the browser redraws
+// Shedule for the paths to be redrawn in the next frame
 Paint.prototype.redrawPaths = function redrawPaths () {
 	if (this.redrawPathsTimeout) return;
 	this.redrawPathsTimeout = requestAnimationFrame(this._redrawPaths.bind(this));
@@ -159,6 +163,10 @@ Paint.prototype._redrawPaths = function _redrawPaths () {
 
 	for (var pathId in this.paths) {
 		this.drawPath(this.paths[pathId]);
+	}
+
+	for (var pathId = 0; pathId < this.localUserPaths.length; pathId++) {
+		this.drawPath(this.localUserPaths[pathId]);
 	}
 
 	delete this.redrawPathsTimeout;
@@ -193,7 +201,7 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 	ctx.lineWidth = path.size * 2;
 
 	ctx.lineJoin = "round";
-	ctx.lineCap= "round";
+	ctx.lineCap = "round";
 
 	ctx.stroke();
 
@@ -261,6 +269,7 @@ Paint.prototype.removePathPoint = function removePathPoint (id, point) {
 	for (var k = this.paths.points.length - 1; k >= 0; k++) {
 		if (this.paths.points[k] == point) {
 			this.paths.points.splice(k, 1);
+			this.redrawPaths();
 			return true;
 		}
 	}
@@ -281,32 +290,51 @@ Paint.prototype.addUserDrawing = function addUserDrawing (drawing) {
 	});
 };
 
+// Functions for the current user path (user path = path we are drawing)
 Paint.prototype.addUserPath = function addUserPath () {
-	this.addPath("localuser", {
+	this.localUserPaths.push({
 		color: this.current_color,
 		size: this.current_size
 	});
 
 	this.dispatchEvent({
 		type: "startuserpath",
-		props: this.paths.localuser
+		props: this.localUserPaths[this.localUserPaths.length - 1]
 	});
 };
 
 Paint.prototype.addUserPathPoint = function dispatchPathPoint (point) {
-	this.addPathPoint("localuser", point);
+	var lastPath = this.localUserPaths[this.localUserPaths.length - 1];
+	lastPath.points = lastPath.points || [];
+	lastPath.points.push(point);
 
 	this.dispatchEvent({
 		type: "userpathpoint",
 		point: point
 	});
+
+	this.redrawPaths();
 };
 
 Paint.prototype.endUserPath = function endUserPath () {
+	var lastPath = this.localUserPaths[this.localUserPaths.length - 1];
+
 	this.dispatchEvent({
 		type: "enduserpath",
-		removePath: this.removePath.bind(this, "localuser")
+		removePath: this.removeUserPath.bind(this, lastPath)
 	});
+};
+
+Paint.prototype.removeUserPath = function removeUserPath (path) {
+	for (var k = 0; k < this.localUserPaths.length; k++) {
+		if (this.localUserPaths[k] == path) {
+			this.localUserPaths.splice(k, 1);
+			this.redrawPaths();
+			return true;
+		}
+	}
+
+	return false;
 };
 
 // Put the drawings on the given layer ('public', 'local', 'effects')
@@ -351,7 +379,7 @@ Paint.prototype.changeTool = function changeTool (tool) {
 };
 
 Paint.prototype.changeColor = function changeColor (color) {
-	this.current_color = color;
+	this.current_color = tinycolor(color);
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 };
 
@@ -473,7 +501,7 @@ Paint.prototype.getColorAt = function getColorAt (point) {
 
 	var pixel = this.tempPixelCtx.getImageData(0, 0, 1, 1).data;
 
-	return this.rgbToHex(pixel[0], pixel[1], pixel[2]);
+	return tinycolor(this.rgbToHex(pixel[0], pixel[1], pixel[2]));
 };
 
 Paint.prototype.rgbToHex = function rgbToHex (r, g, b) {
@@ -543,7 +571,7 @@ Paint.prototype.tools = {
 				x1: Math.round(paint.local.leftTopX + (targetCoords[0] / paint.local.zoom)),
 				y1: Math.round(paint.local.leftTopY + (targetCoords[1] / paint.local.zoom)),
 				size: paint.current_size * 2,
-				color: paint.current_color.toRgbString()
+				color: paint.current_color
 			});
 
 			delete paint.lastLinePoint;
@@ -658,7 +686,7 @@ Paint.prototype.drawFunctions = {
 	brush: function (context, drawing, tiledCanvas) {
 		context.beginPath();
 		context.arc(drawing.x, drawing.y, drawing.size, 0, 2 * Math.PI, true);
-		context.fillStyle = drawing.color;
+		context.fillStyle = drawing.color.toRgbString();
 		context.fill();
 
 
@@ -668,7 +696,7 @@ Paint.prototype.drawFunctions = {
 		}
 	},
 	block: function (context, drawing, tiledCanvas) {
-		context.fillStyle = drawing.color;
+		context.fillStyle = drawing.color.toRgbString();
 		context.fillRect(drawing.x, drawing.y, drawing.size, drawing.size);
 
 		if (tiledCanvas) {
@@ -685,7 +713,7 @@ Paint.prototype.drawFunctions = {
 		context.strokeStyle = drawing.color.toRgbString();
 		context.lineWidth = drawing.size;
 
-		contex.lineCap = "round";
+		context.lineCap = "round";
 
 		context.stroke();
 		
