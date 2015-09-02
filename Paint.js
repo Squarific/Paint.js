@@ -317,6 +317,7 @@ Paint.prototype.addUserDrawing = function addUserDrawing (drawing) {
 // Functions for the current user path (user path = path we are drawing)
 Paint.prototype.addUserPath = function addUserPath () {
 	this.localUserPaths.push({
+		type: "path",
 		color: this.current_color,
 		size: this.current_size
 	});
@@ -364,7 +365,7 @@ Paint.prototype.removeUserPath = function removeUserPath (path) {
 // Put the drawings on the given layer ('public', 'local', 'effects')
 Paint.prototype.drawDrawings = function drawDrawings (layer, drawings) {
 	for (var dKey = 0; dKey < drawings.length; dKey++) {
-		this.drawFunctions[drawings[dKey].type](this[layer].context, drawings[dKey], this[layer]);
+		this.drawFunctions[drawings[dKey].type].call(this, this[layer].context, drawings[dKey], this[layer]);
 	}
 	this[layer].redraw(true);
 };
@@ -705,7 +706,7 @@ Paint.prototype.tools = {
 };
 
 // Drawfunctions
-// Should return true on success
+// this = current paint
 
 Paint.prototype.drawFunctions = {
 	brush: function (context, drawing, tiledCanvas) {
@@ -713,7 +714,6 @@ Paint.prototype.drawFunctions = {
 		context.arc(drawing.x, drawing.y, drawing.size, 0, 2 * Math.PI, true);
 		context.fillStyle = drawing.color.toRgbString();
 		context.fill();
-
 
 		if (tiledCanvas) {
 			tiledCanvas.drawingRegion(drawing.x, drawing.y, drawing.x, drawing.y, drawing.size);
@@ -746,6 +746,9 @@ Paint.prototype.drawFunctions = {
 			tiledCanvas.drawingRegion(drawing.x, drawing.y, drawing.x1, drawing.y1, drawing.size);
 			tiledCanvas.executeNoRedraw();
 		}
+	},
+	path: function (context, drawing, tiledCanvas) {
+		this.drawPath(drawing, context, tiledCanvas);
 	}
 };
 
