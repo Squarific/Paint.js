@@ -42,9 +42,6 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 	this.effectsCanvas = effectC;
 	this.effectsCanvasCtx = effectC.getContext("2d");
 
-	this.publicCtx = publicC.getContext("2d");
-	this.localCtx = localC.getContext("2d");
-
 	effectC.addEventListener("mousedown", this.exectool.bind(this));
 	effectC.addEventListener("mousemove", this.exectool.bind(this));
 	effectC.addEventListener("mouseup", this.exectool.bind(this));
@@ -279,7 +276,7 @@ Paint.prototype.finalizePath = function finalizePath (id) {
 		return;
 	}
 
-	this.drawPath(this.paths[id], this.publicCtx, this.public);
+	this.drawPath(this.paths[id], this.public.context, this.public);
 };
 
 Paint.prototype.removePath = function removePath (id) {
@@ -335,7 +332,8 @@ Paint.prototype.addUserPathPoint = function dispatchPathPoint (point) {
 
 	this.dispatchEvent({
 		type: "userpathpoint",
-		point: point
+		point: point,
+		removePathPoint: this.removeUserPathPoint.bind(this, lastPath, point)
 	});
 
 	this.redrawPaths();
@@ -350,11 +348,20 @@ Paint.prototype.endUserPath = function endUserPath () {
 	});
 };
 
+Paint.prototype.removeUserPathPoint = function removeUserPathPoint (path, point) {
+	for (var k = 0; k < path.points.length; k++) {
+		if (path.points[k] == point) {
+			path.points.splice(k, 1);
+			return;
+		}
+	}
+};
+
 Paint.prototype.removeUserPath = function removeUserPath (path, finalize) {
 	for (var k = 0; k < this.localUserPaths.length; k++) {
 		if (this.localUserPaths[k] == path) {
             if (finalize)
-                this.drawPath(path, this.publicCtx, this.public);
+                this.drawPath(path, this.public.context, this.public);
 
 			this.localUserPaths.splice(k, 1);
 			this.redrawPaths();
