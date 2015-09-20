@@ -12,6 +12,8 @@ function Paint (container, settings) {
 	this.controls = new Controls(this.controlContainer, this.createControlArray());
 	this.toolButtons = ["grab", "line", "brush", "picker"];
 
+	this.addCoordDom(container);
+
 	// Set tool values
 	this.changeTool("brush");
 	this.changeColor(new tinycolor());
@@ -56,6 +58,18 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 
 	this.pathCanvas = this.newCanvasOnTop("paths");
 	this.pathContext = this.pathCanvas.getContext("2d");
+};
+
+Paint.prototype.addCoordDom = function addCoordDom (container) {
+	this.coordDiv = container.appendChild(document.createElement("div"));
+	this.coordDiv.className = "mouse-coords";
+	this.coordDiv.appendChild(document.createTextNode("x: 0 - y: 0"));
+};
+
+Paint.prototype.setMouseCoords = function setMouseCoords (x, y) {
+	while (this.coordDiv.firstChild) this.coordDiv.removeChild(this.coordDiv.firstChild);
+
+	this.coordDiv.appendChild(document.createTextNode("x: " + x + " - y: " + y));
 };
 
 Paint.prototype.newCanvasOnTop = function newCanvasOnTop (name) {
@@ -224,7 +238,7 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 	}
 
 	ctx.strokeStyle = path.color.toRgbString();
-	ctx.lineWidth = path.size * 2;
+	ctx.lineWidth = path.size * 2 * this.public.zoom;
 
 	ctx.lineJoin = "round";
 	ctx.lineCap = "round";
@@ -401,6 +415,14 @@ Paint.prototype.exectool = function exectool (event) {
 	if (typeof this.tools[this.current_tool] == "function") {
 		this.tools[this.current_tool](this, event);
 	}
+
+	if (typeof event == "object") {
+		var coords = this.getCoords(event);
+		coords[0] = this.local.leftTopX + (coords[0] / this.local.zoom);
+		coords[1] = this.local.leftTopY + (coords[1] / this.local.zoom);
+
+		this.setMouseCoords(coords[0], coords[1]);
+	}
 };
 
 Paint.prototype.changeTool = function changeTool (tool) {
@@ -521,7 +543,15 @@ Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
 	this.redrawPaths();
 };
 
+// Get the coordinates of the event relative to the upper left corner of the target element
 Paint.prototype.getCoords = function getCoords (event) {
+	// If there is no clientX/Y (meaning no mouse event) and there are no changed touches
+	// meaning no touch event, then we can't get the coords relative to the target element
+	// for this event
+	if ((typeof event.clientX !== "number" && (!event.changedTouches || !event.changedTouches[0])) ||
+		(typeof event.clientY !== "number" && (!event.changedTouches || !event.changedTouches[0])))
+		return [0, 0];
+
 	// Return the coordinates relative to the target element
 	var clientX = (typeof event.clientX === 'number') ? event.clientX : event.changedTouches[0].clientX,
 		clientY = (typeof event.clientY === 'number') ? event.clientY : event.changedTouches[0].clientY,
