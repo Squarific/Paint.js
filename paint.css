@@ -18,3 +18,11 @@
 .paint-selected-tool:hover {
 	background:rgb(180, 180, 180);
 }
+
+.mouse-coords {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	background: white;
+	padding: .3em;
+}
