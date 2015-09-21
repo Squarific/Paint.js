@@ -175,6 +175,7 @@ Paint.prototype.redrawPaths = function redrawPaths () {
 
 Paint.prototype._redrawPaths = function _redrawPaths () {
 	this.pathContext.clearRect(0, 0, this.pathContext.canvas.width, this.pathContext.canvas.height);
+	delete this.redrawPathsTimeout;
 
 	for (var pathId in this.paths) {
 		this.drawPath(this.paths[pathId]);
@@ -183,8 +184,6 @@ Paint.prototype._redrawPaths = function _redrawPaths () {
 	for (var pathId = 0; pathId < this.localUserPaths.length; pathId++) {
 		this.drawPath(this.localUserPaths[pathId]);
 	}
-
-	delete this.redrawPathsTimeout;
 };
 
 Paint.prototype.drawPathTiledCanvas = function drawPathTiledCanvas (path, ctx, tiledCanvas) {
