@@ -26,6 +26,7 @@ function Paint (container, settings) {
 	this.localUserPaths = [];
 
 	window.addEventListener("resize", this.resize.bind(this));
+	window.addEventListener("keypress", this.keypress.bind(this));
 }
 
 Paint.prototype.defaultSettings = {
@@ -125,7 +126,7 @@ Paint.prototype.createCanvas = function createCanvas (name) {
 };
 
 // Invalidate the canvas size
-Paint.prototype.resize = function () {
+Paint.prototype.resize = function resize () {
 	for (var cKey = 0; cKey < this.canvasArray.length; cKey++) {
 		this.canvasArray[cKey].width = this.canvasArray[cKey].offsetWidth;
 		this.canvasArray[cKey].height = this.canvasArray[cKey].offsetHeight;
@@ -133,6 +134,29 @@ Paint.prototype.resize = function () {
 	this.public.redraw();
 	this.local.redraw();
 	this.redrawPaths();
+};
+
+Paint.prototype.keypress = function keypress (event) {
+	if (event.target == document.body) {
+		console.log("Keypress", event);
+
+		if (event.keyCode == 99) {
+			console.log("Pressed C, toggling color selector.");
+			$(this.controls.byName["tool-color"].input).spectrum("toggle");
+		}
+
+		var toolShortcuts = {
+			98: "brush",
+			103: "grab",
+			108: "line",
+			112: "picker"
+		};
+
+		if (toolShortcuts[event.keyCode]) {
+			console.log("Switching tool to " + toolShortcuts[event.keyCode]);
+			this.changeTool(toolShortcuts[event.keyCode]);
+		}
+	}
 };
 
 Paint.prototype.redrawLocalDrawings = function redrawLocalDrawings () {
@@ -745,6 +769,19 @@ Paint.prototype.tools = {
 	},
 	block: function block (paint, event) {
 		this.brush(paint, event, "block");
+	},
+	text: function text (paint, event) {
+		if (event == "remove") {
+			delete this.textToolText;
+			return;
+		}
+
+		// Get the coordinates relative to the canvas
+		var targetCoords = paint.getCoords(event);
+
+		if ((event.type == "mousedown" || event.type == "touchstart") && this.textToolText) {
+			paint.addUserDrawing("");
+		}
 	}
 };
 

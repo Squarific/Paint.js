@@ -162,18 +162,18 @@ Controls.prototype.constructors.text = function createTextInput (control) {
 	}
 };
 
-Controls.prototype.constructors.color = function createControlInput (control) {
+Controls.prototype.constructors.color = function createColorInput (control) {
 	// Create the actual input field
 	var input = document.createElement("input");
 	input.type = "text";
 	input.value = control.value;
 	input.className = (control.classAppend || "") + "control-color-input";
 
-	return {
+	var returnData = {
 		input: input,
 		containerAppend: input,
 		executeAfterAppend: function () {
-			$(input).spectrum({
+			var spectrum = $(input).spectrum({
 				showAlpha: true,
 				showInput: true,
 				showInitial: true,
@@ -186,5 +186,7 @@ Controls.prototype.constructors.color = function createControlInput (control) {
 				}
 			});
 		}
-	}
+	};
+
+	return returnData;
 };
