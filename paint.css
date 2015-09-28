@@ -19,6 +19,14 @@
 	background:rgb(180, 180, 180);
 }
 
+input.paint-texttool {
+	position:relative;
+	margin:.2em;
+	padding:.2em;
+	font-size:1.2em;
+	font-family: Verdana, Geneva, sans-serif;
+}
+
 .mouse-coords {
 	position: absolute;
 	left: 0;
