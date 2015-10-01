@@ -69,7 +69,7 @@ Paint.prototype.addCoordDom = function addCoordDom (container) {
 Paint.prototype.setMouseCoords = function setMouseCoords (x, y) {
 	while (this.coordDiv.firstChild) this.coordDiv.removeChild(this.coordDiv.firstChild);
 
-	this.coordDiv.appendChild(document.createTextNode("x: " + x + " - y: " + y));
+	this.coordDiv.appendChild(document.createTextNode("x: " + x.toFixed() + " - y: " + y.toFixed()));
 };
 
 Paint.prototype.newCanvasOnTop = function newCanvasOnTop (name) {
