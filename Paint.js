@@ -3,6 +3,7 @@ function Paint (container, settings) {
 	this.settings = this.utils.merge(this.utils.copy(settings), this.defaultSettings);
 
 	this.container = container;
+	this.boundingBoxList = [];
 
 	this.addCanvas(container);
 	this.resize();
@@ -116,18 +117,15 @@ Paint.prototype.newCanvasOnTop = function newCanvasOnTop (name) {
 
 // Resets the paint (background, position, paths, ...)
 Paint.prototype.clear = function clear () {
-	this.public.chunks = {};
-	this.background.chunks = {};
-	this.local.chunks = {};
+	this.public.clearAll();
+	this.background.clearAll();
+	this.local.clearAll();
+
 	this.paths = {};
 	this.localUserPaths = [];
 	this.publicdrawings = [];
 
 	this.goto(0, 0);
-
-	this.background.redraw();
-	this.public.redraw();
-	this.local.redraw();
 };
 
 Paint.prototype.goto = function goto (worldX, worldY) {
@@ -144,12 +142,12 @@ Paint.prototype.goto = function goto (worldX, worldY) {
 	this.redrawPaths();
 };
 
-Paint.prototype.finalizeAll = function finalizeAll () {
-	this.drawDrawings("background", this.publicdrawings);
-	this.publicdrawings = [];
-	this.public.contextQueue = [];
-	this.public.chunks = [];
-	this.public.redraw();
+Paint.prototype.finalizeAll = function finalizeAll (amountToKeep) {
+	this.drawDrawings("background", this.publicdrawings.slice(0, this.publicdrawings.length - (amountToKeep || 0)));
+	this.publicdrawings.splice(0, this.publicdrawings.length - (amountToKeep || 0));
+
+	this.public.clearAll();
+	this.drawDrawings("public", this.publicdrawings);
 };
 
 Paint.prototype.createCanvas = function createCanvas (name) {
@@ -164,10 +162,15 @@ Paint.prototype.resize = function resize () {
 		this.canvasArray[cKey].width = this.canvasArray[cKey].offsetWidth;
 		this.canvasArray[cKey].height = this.canvasArray[cKey].offsetHeight;
 	}
-	this.background.redraw();
-	this.public.redraw();
-	this.local.redraw();
+
+	this.background.redrawOnce();
+	this.public.redrawOnce();
+	this.local.redrawOnce();
 	this.redrawPaths();
+
+	for (var k = 0; k < this.boundingBoxList.length; k++) {
+		this.boundingBoxList[k].boundingBoxCache = this.boundingBoxList[k].getBoundingClientRect();
+	}
 };
 
 Paint.prototype.keypress = function keypress (event) {
@@ -186,12 +189,12 @@ Paint.prototype.keypress = function keypress (event) {
 			this.setColor(tinycolor(this.current_color.toRgb()).setAlpha(number / 9));
 		}
 
-		if (key == 91 || key == 44 || key == 219
+		if (key == 91 || key == 44 || key == 45 || key == 219
 		 || key == 186 || key == 96)
 			this.changeToolSize(--this.current_size, true);
 		
 		if (key == 93 || key == 46 || key == 221
-		 || key == 187 || key == 43)
+		 || key == 187 || key == 43 || key == 61)
 			this.changeToolSize(++this.current_size, true);
 
 		var toolShortcuts = {
@@ -245,32 +248,7 @@ Paint.prototype.keyup = function keyup (event) {
 };
 
 Paint.prototype.redrawLocalDrawings = function redrawLocalDrawings () {
-	// Redraw the locals in the current loop
-	this.redrawLocalsNeeded = true;
-
-	// Only redraw every so often and not every change of the locals
-	if (!this.drawDrawingTimeout)
-		this.drawDrawingTimeout = setTimeout(this.redrawTimeout.bind(this), 30);
-};
-
-Paint.prototype.redrawTimeout = function redrawTimeout () {
-	// Redraw in an animationframe
-	requestAnimationFrame(this.redrawLoop.bind(this));
-};
-
-Paint.prototype.redrawLoop = function redrawLoop () {
-	// Redraw after we ADD (!) to one of the layers
-	// or if we ADD/REMOVE from the local layer
-	// If you remove from another layer and call the redrawloop transparency issues may arrise
-	for (var layer in this.redrawLayers) {
-		this[layer].redraw();
-	}
-
-	if (this.redrawLocalsNeeded)
-		this.redrawLocals();
-	
-	delete this.drawDrawingTimeout;
-	delete this.redrawLocalsNeeded;
+	this.redrawLocals();
 };
 
 // Shedule for the paths to be redrawn in the next frame
@@ -359,14 +337,11 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 };
 
 Paint.prototype.redrawLocals = function redrawLocals (noclear) {
-	// Force the redrawing of locals NOW
-
-	// TODO: Only clear the parts that were removed
-
+	// Force the redrawing of locals in this frame
 	this.local.clearAll();
 	this.localDrawings.forEach(this.drawDrawing.bind(this, "local"));
 
-	this.local.redraw();
+	this.local.redrawOnce();
 }
 
 Paint.prototype.removeLocalDrawing = function removeLocalDrawing (drawing) {
@@ -394,7 +369,6 @@ Paint.prototype.undodrawings = function undodrawings (socketid, all) {
 	}
 
 	this.public.clearAll();
-	this.public.redraw();
 	this.drawDrawings("public", this.publicdrawings);
 };
 
@@ -528,6 +502,7 @@ Paint.prototype.removeUserPath = function removeUserPath (path, finalize, id) {
 };
 
 // Put the drawings on the given layer ('background', 'public', 'local', 'effects')
+// This function forces a redraw after the drawings have been added
 Paint.prototype.drawDrawings = function drawDrawings (layer, drawings) {
 	for (var dKey = 0; dKey < drawings.length; dKey++) {
 		if (typeof this.drawFunctions[drawings[dKey].type] == "function")
@@ -539,18 +514,14 @@ Paint.prototype.drawDrawings = function drawDrawings (layer, drawings) {
 
 	}
 	
-	this[layer].redraw(true);
+	this[layer].redrawOnce();
 };
 
 // Put the drawing on the given layer ('background', 'public', 'local', 'effects')
+// This function only redraws at the next browser drawframe
 Paint.prototype.drawDrawing = function drawDrawing (layer, drawing) {
 	this.drawFunctions[drawing.type].call(this, this[layer].context, drawing, this[layer]);
-
-	this.redrawLayers = this.redrawLayers || {};
-	this.redrawLayers[layer] = true;
-
-	if (!this.drawDrawingTimeout)
-		this.drawDrawingTimeout = setTimeout(this.redrawLoop.bind(this), 30);
+	this[layer].redrawOnce();
 };
 
 // User interaction on the canvas
@@ -734,13 +705,20 @@ Paint.prototype.getCoords = function getCoords (event) {
 		(typeof event.clientY !== "number" && (!event.changedTouches || !event.changedTouches[0])))
 		return [0, 0];
 
+
 	// Return the coordinates relative to the target element
 	var clientX = (typeof event.clientX === 'number') ? event.clientX : event.changedTouches[0].clientX,
-		clientY = (typeof event.clientY === 'number') ? event.clientY : event.changedTouches[0].clientY,
-		target = event.target || document.elementFromPoint(clientX, clientY),
-		boundingBox = target.getBoundingClientRect(),
-		relativeX = clientX - boundingBox.left,
-		relativeY = clientY - boundingBox.top;
+	    clientY = (typeof event.clientY === 'number') ? event.clientY : event.changedTouches[0].clientY,
+	    target = event.target || document.elementFromPoint(clientX, clientY);
+
+	if (this.boundingBoxList.indexOf(target) == -1)
+		this.boundingBoxList.push(target);
+
+	target.boundingBoxCache = target.boundingBoxCache || target.getBoundingClientRect();
+
+	var relativeX = clientX - target.boundingBoxCache.left,
+	    relativeY = clientY - target.boundingBoxCache.top;
+
 	return [relativeX, relativeY];
 };
 
