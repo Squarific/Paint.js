@@ -82,7 +82,7 @@ Controls.prototype.constructors.integer = function createIntegerInput (control) 
 
 	// Create the actual input field
 	var input = document.createElement("input");
-	input.type = "number";
+	input.type = control.range ? "range" : "number";
 	input.value = control.value;
 	input.className = (control.classAppend || "") + "control-integer-input";
 

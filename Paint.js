@@ -5,6 +5,9 @@ function Paint (container, settings) {
 	this.container = container;
 	this.boundingBoxList = [];
 
+	this.scale = [1, 1]; // Used for horizontal and vertical mirror
+	this.rotation = 0; // Rotation in degrees
+
 	this.addCanvas(container);
 	this.resize();
 
@@ -39,6 +42,74 @@ function Paint (container, settings) {
 Paint.prototype.defaultSettings = {
 	maxSize: 50,
 	maxLineLength: 200
+};
+
+// Redraws everything taking into account mirroring and rotation
+Paint.prototype.redrawAll = function redrawAll () {
+	for (var k = /*this.nonTiledCanvasIndex*/ 0; k < this.canvasArray.length; k++) {
+		var ctx = this.canvasArray[k].getContext("2d");
+
+		ctx.save();
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+		ctx.restore();
+
+		ctx.setTransform(
+			this.scale[0], 0, 0,
+			this.scale[1], this.canvasArray[k].width / 2, this.canvasArray[k].height / 2
+		);
+
+		ctx.rotate(this.rotation * Math.PI / 180);
+		ctx.translate(-this.canvasArray[k].width / 2, -this.canvasArray[k].height / 2);
+	}
+
+	// var tiledCanvasLayers = [this.background, this.public, this.local];
+
+	// for (var k = 0; k < tiledCanvasLayers.length; k++) {
+	// 	tiledCanvasLayers[k].setRotation(this.rotation);
+	// 	tiledCanvasLayers[k].setHorizontalMirror(this.scale[0]);
+	// 	tiledCanvasLayers[k].setVerticalMirror(this.scale[1]);
+	// 	tiledCanvasLayers[k].redrawOnce();
+	// }
+
+	this.background.redraw();
+	this.public.redraw();
+	this.local.redraw();
+
+	this.redrawPaths();
+};
+
+Paint.prototype.setHorizontalMirror = function setHorizontalMirror (value) {
+	this.scale[0] = value ? -1 : 1;
+	this.redrawAll();
+
+	this.dispatchEvent({
+		type: "canvaschange",
+		rotation: this.rotation,
+		scale: this.scale
+	});
+};
+
+Paint.prototype.setVerticalMirror = function setVerticalMirror (value) {
+	this.scale[1] = value ? -1 : 1;
+	this.redrawAll();
+
+	this.dispatchEvent({
+		type: "canvaschange",
+		rotation: this.rotation,
+		scale: this.scale
+	});
+};
+
+Paint.prototype.setRotation = function setRotation (value) {
+	this.rotation = value;
+	this.redrawAll();
+
+	this.dispatchEvent({
+		type: "canvaschange",
+		rotation: this.rotation,
+		scale: this.scale
+	});
 };
 
 Paint.prototype.addCanvas = function addCanvas (container) {
@@ -163,10 +234,7 @@ Paint.prototype.resize = function resize () {
 		this.canvasArray[cKey].height = this.canvasArray[cKey].offsetHeight;
 	}
 
-	this.background.redrawOnce();
-	this.public.redrawOnce();
-	this.local.redrawOnce();
-	this.redrawPaths();
+	this.redrawAll();
 
 	for (var k = 0; k < this.boundingBoxList.length; k++) {
 		this.boundingBoxList[k].boundingBoxCache = this.boundingBoxList[k].getBoundingClientRect();
@@ -197,6 +265,18 @@ Paint.prototype.keypress = function keypress (event) {
 		 || key == 187 || key == 43 || key == 61)
 			this.changeToolSize(++this.current_size, true);
 
+		if (key == 26 && event.ctrlKey)
+			this.undo();
+
+		if (key == 114)
+			this.setRotation(this.rotation + 1 % 360);
+
+		if (key == 109)
+			this.setHorizontalMirror(this.scale[0] == 1);
+
+		if (key == 107)
+			this.setVerticalMirror(this.scale[1] == 1);
+
 		var toolShortcuts = {
 			98: "brush",
 			103: "grab",
@@ -218,6 +298,12 @@ Paint.prototype.keydown = function keydown (event) {
 
 	if (event.target == document.body) {
 		console.log("Keydown", event);
+
+		if (key == 27) {
+			this.setRotation(0);
+			this.setHorizontalMirror(false);
+			this.setVerticalMirror(false);
+		}
 
 		if (this.current_tool !== "grab" && key == 32) {
 			this.previous_tool = this.current_tool;
@@ -637,6 +723,7 @@ Paint.prototype.createControlArray = function createControlArray () {
 	},*/ {
 		name: "tool-size",
 		type: "integer",
+		range: true,
 		text: "Tool size",
 		min: 1,
 		max: 50,
@@ -718,6 +805,21 @@ Paint.prototype.getCoords = function getCoords (event) {
 
 	var relativeX = clientX - target.boundingBoxCache.left,
 	    relativeY = clientY - target.boundingBoxCache.top;
+
+	if (this.rotation !== 0 || this.scale[0] !== 1 || this.scale[1] !== 1) {
+		relativeX -= event.target.width / 2;
+		relativeY -= event.target.height / 2;
+
+		relativeX *= this.scale[0];
+		relativeY *= this.scale[1];
+
+		var oldX = relativeX;
+		relativeX = relativeX * Math.cos(-this.rotation * Math.PI / 180) - relativeY * Math.sin(-this.rotation * Math.PI / 180)
+		relativeY =      oldX * Math.sin(-this.rotation * Math.PI / 180) + relativeY * Math.cos(-this.rotation * Math.PI / 180)
+
+		relativeX += event.target.width / 2;
+		relativeY += event.target.height / 2;
+	}
 
 	return [relativeX, relativeY];
 };

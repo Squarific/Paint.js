@@ -13,10 +13,23 @@ function TiledCanvas (canvas, settings) {
     this.settings = this.normalizeDefaults(settings, this.defaultSettings);
     this.contextQueue = [];
     this.context = this.createContext();
+    this.lastClear = Date.now();
 }
 
 TiledCanvas.prototype.defaultSettings = {
     chunkSize: 256
+};
+
+TiledCanvas.prototype.setRotation = function setRotation () {
+
+};
+
+TiledCanvas.prototype.setHorizontalMirror = function setHorizontalMirror () {
+
+};
+
+TiledCanvas.prototype.setVerticalMirror = function setVerticalMirror () {
+
 };
 
 TiledCanvas.prototype.cloneObject = function (obj) {
@@ -56,7 +69,14 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
 	cancelAnimationFrame(this._redrawTimeout);
 	delete this._redrawTimeout;
 
-    if (!noclear) this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+    if (!noclear) {
+        this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+
+        this.ctx.save();
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+        this.ctx.restore();
+    }
 
     var startChunkX = Math.floor(this.leftTopX / this.settings.chunkSize),
         endChunkX   = Math.ceil((this.leftTopX + this.canvas.width / this.zoom) / this.settings.chunkSize),
@@ -116,6 +136,7 @@ TiledCanvas.prototype.clearAll = function clearAll () {
     this.contextQueue = [];
     this.requestChunkCallbackList = {};
     this.chunks = {};
+    this.lastClear = Date.now();
 };
 
 TiledCanvas.prototype.requestChunk = function requestChunk (chunkX, chunkY, callback) {
@@ -137,7 +158,10 @@ TiledCanvas.prototype.requestChunk = function requestChunk (chunkX, chunkY, call
             this.requestChunkCallbackList[chunkX][chunkY] = [];
         }
 
+        var startTime = Date.now();
         this.requestUserChunk(chunkX, chunkY, function (image) {
+            // If the request started before we cleared, ignore this
+            if (this.lastClear > startTime) return;
             // For responsiveness make sure the callback doesnt happen in the same event frame
             this.setUserChunk(chunkX, chunkY, image);
         }.bind(this));
