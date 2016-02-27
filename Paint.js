@@ -173,11 +173,11 @@ Paint.prototype.addCoordDom = function addCoordDom (container) {
 	yInput.max = 65536;
 
 	xInput.addEventListener("input", function (event) {
-		this.goto(parseInt(event.target.value) || 0, this.public.leftTopY);
+		this.goto(parseInt(event.target.value) - this.canvasArray[0].width / this.public.zoom / 2 || 0, this.public.leftTopY);
 	}.bind(this));
 
 	yInput.addEventListener("input", function (event) {
-		this.goto(this.public.leftTopX, parseInt(event.target.value) || 0);
+		this.goto(this.public.leftTopX, parseInt(event.target.value) - this.canvasArray[0].height / this.public.zoom / 2 || 0);
 	}.bind(this));
 };
 
