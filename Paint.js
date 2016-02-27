@@ -836,9 +836,20 @@ Paint.prototype.zoom = function zoom (zoomFactor) {
 };
 
 Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
+	var currentMiddleX = this.public.leftTopX + this.canvasArray[0].width / this.public.zoom / 2;
+	var currentMiddleY = this.public.leftTopY + this.canvasArray[0].height / this.public.zoom / 2;
+
+	var newX = currentMiddleX - this.canvasArray[0].width / zoomFactor / 2;
+	var newY = currentMiddleY - this.canvasArray[0].height / zoomFactor / 2;
+
 	this.public.absoluteZoom(zoomFactor);
 	this.background.absoluteZoom(zoomFactor);
 	this.local.absoluteZoom(zoomFactor);
+
+	this.public.goto(newX, newY);
+	this.background.goto(newX, newY);
+	this.local.goto(newX, newY);
+
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 	this.redrawPaths();
 };
