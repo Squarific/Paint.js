@@ -6,3 +6,31 @@
 	top:0;
 	left:0;
 }
+
+.paint-canvas-background {
+	background-image: url("images/transparent.png");
+}
+
+.paint-selected-tool {
+	background:rgb(190, 190, 190);
+}
+
+.paint-selected-tool:hover {
+	background:rgb(180, 180, 180);
+}
+
+input.paint-texttool {
+	position:relative;
+	margin:.2em;
+	padding:.2em;
+	font-size:1.2em;
+	font-family: Verdana, Geneva, sans-serif;
+}
+
+.mouse-coords {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	background: white;
+	padding: .3em;
+}
