@@ -37,6 +37,8 @@ function Paint (container, settings) {
 	window.addEventListener("keypress", this.keypress.bind(this));
 	window.addEventListener("keydown", this.keydown.bind(this));
 	window.addEventListener("keyup", this.keyup.bind(this));
+
+	//introJs().setOptions({ 'tooltipPosition': 'auto', 'showProgress': true }).start();
 }
 
 Paint.prototype.defaultSettings = {
@@ -118,6 +120,12 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 	var localC  = container.appendChild(this.createCanvas("local"));
 	var effectC = container.appendChild(this.createCanvas("effect"));
 
+	var backgroundCtx = backgroundC.getContext("2d");
+	backgroundCtx.mozImageSmoothingEnabled = false;
+	backgroundCtx.webkitImageSmoothingEnabled = false;
+	backgroundCtx.msImageSmoothingEnabled = false;
+	backgroundCtx.imageSmoothingEnabled = false;
+
 	this.background = new TiledCanvas(backgroundC);
 	this.public = new TiledCanvas(publicC);
 
@@ -157,6 +165,8 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 Paint.prototype.addCoordDom = function addCoordDom (container) {
 	this.coordDiv = container.appendChild(document.createElement("div"));
 	this.coordDiv.className = "mouse-coords";
+
+	this.coordDiv.setAttribute("data-intro", "Here you can jump to any coordinates you would like to see.");
 
 	this.coordDiv.appendChild(document.createTextNode("x:"));
 	var xInput = this.coordDiv.appendChild(document.createElement("input"));
@@ -726,48 +736,69 @@ Paint.prototype.createControlArray = function createControlArray () {
 		image: "images/icons/grab.png",
 		title: "Change tool to grab",
 		value: "grab",
-		action: this.changeTool.bind(this)
+		action: this.changeTool.bind(this),
+		data: {
+			intro: "You can use this tool to move around."
+		}
 	}, {
 		name: "line",
 		type: "button",
 		image: "images/icons/line.png",
 		title: "Change tool to line",
 		value: "line",
-		action: this.changeTool.bind(this)
+		action: this.changeTool.bind(this),
+		data: {
+			intro: "With this tool you can make a line."
+		}
 	}, {
 		name: "brush",
 		type: "button",
 		image: "images/icons/brush.png",
 		title: "Change tool to brush",
 		value: "brush",
-		action: this.changeTool.bind(this)
+		action: this.changeTool.bind(this),
+		data: {
+			intro: "Use this tool to draw normally."
+		}
 	}, {
 		name: "text",
 		type: "button",
 		image: "images/icons/text.png",
 		title: "Change tool to text",
 		value: "text",
-		action: this.changeTool.bind(this)
+		action: this.changeTool.bind(this),
+		data: {
+			intro: "With this tool you can put text on the canvas."
+		}
 	}, {
 		name: "picker",
 		type: "button",
 		image: "images/icons/picker.png",
 		title: "Change tool to picker",
 		value: "picker",
-		action: this.changeTool.bind(this)
+		action: this.changeTool.bind(this),
+		data: {
+			intro: "Click on the canvas and your color will be changed to that value."
+		}
 	}, {
 		name: "zoom",
 		type: "button",
 		image: "images/icons/zoom.png",
 		title: "Change tool to zoom",
 		value: "zoom",
-		action: this.changeTool.bind(this)
+		action: this.changeTool.bind(this),
+		data: {
+			intro: "Click and drag to zoom in to whatever is inside the box."
+		}
 	}, {
 		name: "undo",
 		type: "button",
 		image: "images/icons/undo.png",
 		title: "Undo drawing",
-		action: this.undo.bind(this)
+		action: this.undo.bind(this),
+		data: {
+			intro: "Made a mistake? No worry just click here!"
+		}
 	}, /*{
 		name: "block",
 		type: "button",
@@ -784,14 +815,20 @@ Paint.prototype.createControlArray = function createControlArray () {
 		max: 50,
 		value: 5,
 		title: "Change the size of the tool",
-		action: this.changeToolSize.bind(this)
+		action: this.changeToolSize.bind(this),
+		data: {
+			intro: "This changes your brush, line and text size."
+		}
 	}, {
 		name: "zoom-in",
 		type: "button",
 		image: "images/icons/zoomin.png",
 		title: "Zoom in",
 		value: 2,
-		action: this.zoom.bind(this)
+		action: this.zoom.bind(this),
+		data: {
+			intro: "These buttons allow you to zoom in or out of the center. The left one zooms in twice. The middle resets your zoom. The rightmost lets you see twice as much."
+		}
 	}, {
 		name: "zoom-reset",
 		type: "button",
@@ -827,9 +864,7 @@ Paint.prototype.zoom = function zoom (zoomFactor) {
 	this.background.relativeZoom(zoomFactor);
 	this.local.relativeZoom(zoomFactor);
 
-	this.public.goto(newX, newY);
-	this.background.goto(newX, newY);
-	this.local.goto(newX, newY);
+	this.goto(newX, newY);
 
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 	this.redrawPaths();
@@ -846,9 +881,7 @@ Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
 	this.background.absoluteZoom(zoomFactor);
 	this.local.absoluteZoom(zoomFactor);
 
-	this.public.goto(newX, newY);
-	this.background.goto(newX, newY);
-	this.local.goto(newX, newY);
+	this.goto(newX, newY);
 
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 	this.redrawPaths();

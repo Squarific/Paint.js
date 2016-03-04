@@ -17,19 +17,8 @@ function TiledCanvas (canvas, settings) {
 }
 
 TiledCanvas.prototype.defaultSettings = {
-    chunkSize: 256
-};
-
-TiledCanvas.prototype.setRotation = function setRotation () {
-
-};
-
-TiledCanvas.prototype.setHorizontalMirror = function setHorizontalMirror () {
-
-};
-
-TiledCanvas.prototype.setVerticalMirror = function setVerticalMirror () {
-
+    chunkSize: 256,
+    fadeTime: 500
 };
 
 TiledCanvas.prototype.cloneObject = function (obj) {
@@ -93,7 +82,19 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
 TiledCanvas.prototype.drawChunk = function drawChunk (chunkX, chunkY) {
     if (this.chunks[chunkX] && this.chunks[chunkX][chunkY]) {
         if (this.chunks[chunkX][chunkY] == "empty") return;
+
+        if (this.chunks[chunkX][chunkY].addedTime) {
+            var deltaAdded = Date.now() - this.chunks[chunkX][chunkY].addedTime;
+            this.ctx.globalAlpha = deltaAdded / this.settings.fadeTime;
+ 
+            if (deltaAdded > this.settings.fadeTime)
+                delete this.chunks[chunkX][chunkY].addedTime;
+
+            this.redrawOnce();
+        }
+ 
         this.ctx.drawImage(this.chunks[chunkX][chunkY].canvas, ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
+        this.ctx.globalAlpha = 1;
     } else if(typeof this.requestUserChunk == "function") {
         this.requestChunk(chunkX, chunkY);
         if (this.loadingImage) {
@@ -184,6 +185,7 @@ TiledCanvas.prototype.setUserChunk = function setUserChunk (chunkX, chunkY, imag
     // Draw the chunk
     this.chunks[chunkX] = this.chunks[chunkX] || {};
     this.chunks[chunkX][chunkY] =  this.newCtx(this.settings.chunkSize, this.settings.chunkSize, -chunkX * this.settings.chunkSize, -chunkY * this.settings.chunkSize);
+    this.chunks[chunkX][chunkY].addedTime = Date.now();
 
     if (image) this.chunks[chunkX][chunkY].drawImage(image, chunkX * this.settings.chunkSize, chunkY * this.settings.chunkSize);
 
