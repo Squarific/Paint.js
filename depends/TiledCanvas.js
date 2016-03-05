@@ -81,20 +81,27 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
 
 TiledCanvas.prototype.drawChunk = function drawChunk (chunkX, chunkY) {
     if (this.chunks[chunkX] && this.chunks[chunkX][chunkY]) {
-        if (this.chunks[chunkX][chunkY] == "empty") return;
+        if (this.chunks[chunkX][chunkY] == "empty") return; 
+        this.ctx.drawImage(this.chunks[chunkX][chunkY].canvas, ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
 
+        // If this chunk got recently added we want a fade effect
         if (this.chunks[chunkX][chunkY].addedTime) {
             var deltaAdded = Date.now() - this.chunks[chunkX][chunkY].addedTime;
-            this.ctx.globalAlpha = deltaAdded / this.settings.fadeTime;
+            this.ctx.globalAlpha = Math.max(0, 1 - deltaAdded / this.settings.fadeTime);
  
             if (deltaAdded > this.settings.fadeTime)
                 delete this.chunks[chunkX][chunkY].addedTime;
 
+            // Force a redraw to avoid optimization of not drawing
             this.redrawOnce();
+
+            // If we have a loading image we should fade from that instead of transparency
+            if (this.loadingImage) {
+                this.ctx.drawImage(this.loadingImage, ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
+            }
+
+            this.ctx.globalAlpha = 1;
         }
- 
-        this.ctx.drawImage(this.chunks[chunkX][chunkY].canvas, ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
-        this.ctx.globalAlpha = 1;
     } else if(typeof this.requestUserChunk == "function") {
         this.requestChunk(chunkX, chunkY);
         if (this.loadingImage) {

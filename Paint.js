@@ -74,9 +74,9 @@ Paint.prototype.redrawAll = function redrawAll () {
 	// 	tiledCanvasLayers[k].redrawOnce();
 	// }
 
-	this.background.redraw();
-	this.public.redraw();
-	this.local.redraw();
+	this.background.redrawOnce();
+	this.public.redrawOnce();
+	this.local.redrawOnce();
 
 	this.redrawPaths();
 };
@@ -104,7 +104,7 @@ Paint.prototype.setVerticalMirror = function setVerticalMirror (value) {
 };
 
 Paint.prototype.setRotation = function setRotation (value) {
-	this.rotation = value;
+	this.rotation = value % 360;
 	this.redrawAll();
 
 	this.dispatchEvent({
@@ -313,8 +313,13 @@ Paint.prototype.keypress = function keypress (event) {
 		 || key == 187 || key == 43 || key == 61)
 			this.changeToolSize(++this.current_size, true);
 
+		//r
 		if (key == 114)
-			this.setRotation(this.rotation + 1 % 360);
+			this.setRotation(this.rotation + 1);
+
+		//e
+		if (key == 101)
+			this.setRotation(this.rotation - 1);
 
 		if (key == 109)
 			this.setHorizontalMirror(this.scale[0] == 1);
