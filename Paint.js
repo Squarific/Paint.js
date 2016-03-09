@@ -46,6 +46,10 @@ Paint.prototype.defaultSettings = {
 	maxLineLength: 200
 };
 
+Paint.prototype.defaultShortcuts = {
+
+};
+
 // Redraws everything taking into account mirroring and rotation
 Paint.prototype.redrawAll = function redrawAll () {
 	for (var k = /*this.nonTiledCanvasIndex*/ 0; k < this.canvasArray.length; k++) {
@@ -966,6 +970,10 @@ Paint.prototype.tools = {
 		if (event == "remove") {
 			delete paint.lastZoomPoint;
 			paint.effectsCanvas.style.cursor = "";
+
+			if (typeof paint.effectsCanvasCtx.setLineDash == "function")
+				paint.effectsCanvasCtx.setLineDash([]);
+
 			return;
 		}
 
@@ -1243,7 +1251,7 @@ Paint.prototype.tools = {
 		if ((event.type == "mouseup" || event.type == "touchend") && paint.textToolInput.value) {
 			paint.addUserDrawing({
 				type: "text",
-				text: paint.textToolInput.value || "",
+				text: paint.textToolInput.value.slice(0, 256) || "",
 				x: Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
 				y: Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)),
 				size: paint.current_size,
@@ -1264,9 +1272,9 @@ Paint.prototype.tools = {
 			                                 paint.current_size * paint.local.zoom * 2);
 
 			paint.effectsCanvasCtx.fillStyle = paint.current_color.toRgbString();
-			paint.effectsCanvasCtx.fillText(paint.textToolInput.value, scaledCoords[0], scaledCoords[1]);
+			paint.effectsCanvasCtx.fillText(paint.textToolInput.value.slice(0, 256), scaledCoords[0], scaledCoords[1]);
 
-			paint.lastToolText = paint.textToolInput.value;
+			paint.lastToolText = paint.textToolInput.value.slice(0, 256);
 			paint.lastMovePoint = scaledCoords;
 		}
 
@@ -1279,8 +1287,8 @@ Paint.prototype.tools = {
 			                                 paint.current_size * paint.local.zoom * 2);
 
 			paint.effectsCanvasCtx.fillStyle = paint.current_color.toRgbString();
-			paint.effectsCanvasCtx.fillText(paint.textToolInput.value, paint.lastMovePoint[0], paint.lastMovePoint[1]);
-			paint.lastToolText = paint.textToolInput.value;
+			paint.effectsCanvasCtx.fillText(paint.textToolInput.value.slice(0, 256), paint.lastMovePoint[0], paint.lastMovePoint[1]);
+			paint.lastToolText = paint.textToolInput.value.slice(0, 256);
 		}
 	}
 };

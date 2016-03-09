@@ -81,7 +81,8 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
 
 TiledCanvas.prototype.drawChunk = function drawChunk (chunkX, chunkY) {
     if (this.chunks[chunkX] && this.chunks[chunkX][chunkY]) {
-        if (this.chunks[chunkX][chunkY] == "empty") return; 
+        if (this.chunks[chunkX][chunkY] == "empty") return;
+
         this.ctx.drawImage(this.chunks[chunkX][chunkY].canvas, ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
 
         // If this chunk got recently added we want a fade effect
@@ -97,7 +98,13 @@ TiledCanvas.prototype.drawChunk = function drawChunk (chunkX, chunkY) {
 
             // If we have a loading image we should fade from that instead of transparency
             if (this.loadingImage) {
-                this.ctx.drawImage(this.loadingImage, ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
+                var originalwidth = this.settings.chunkSize * this.zoom;
+                var width = originalwidth * this.ctx.globalAlpha;
+                this.ctx.drawImage(this.loadingImage,
+                    ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom + (originalwidth - width) / 2,
+                    ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom + (originalwidth - width) / 2,
+                    width,
+                    width);
             }
 
             this.ctx.globalAlpha = 1;
