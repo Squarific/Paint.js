@@ -37,11 +37,17 @@ function Paint (container, settings) {
 	window.addEventListener("keypress", this.keypress.bind(this));
 	window.addEventListener("keydown", this.keydown.bind(this));
 	window.addEventListener("keyup", this.keyup.bind(this));
+
+	//introJs().setOptions({ 'tooltipPosition': 'auto', 'showProgress': true }).start();
 }
 
 Paint.prototype.defaultSettings = {
 	maxSize: 50,
 	maxLineLength: 200
+};
+
+Paint.prototype.defaultShortcuts = {
+
 };
 
 // Redraws everything taking into account mirroring and rotation
@@ -72,9 +78,9 @@ Paint.prototype.redrawAll = function redrawAll () {
 	// 	tiledCanvasLayers[k].redrawOnce();
 	// }
 
-	this.background.redraw();
-	this.public.redraw();
-	this.local.redraw();
+	this.background.redrawOnce();
+	this.public.redrawOnce();
+	this.local.redrawOnce();
 
 	this.redrawPaths();
 };
@@ -102,7 +108,7 @@ Paint.prototype.setVerticalMirror = function setVerticalMirror (value) {
 };
 
 Paint.prototype.setRotation = function setRotation (value) {
-	this.rotation = value;
+	this.rotation = value % 360;
 	this.redrawAll();
 
 	this.dispatchEvent({
@@ -117,6 +123,12 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 	var publicC = container.appendChild(this.createCanvas("public"));
 	var localC  = container.appendChild(this.createCanvas("local"));
 	var effectC = container.appendChild(this.createCanvas("effect"));
+
+	var backgroundCtx = backgroundC.getContext("2d");
+	backgroundCtx.mozImageSmoothingEnabled = false;
+	backgroundCtx.webkitImageSmoothingEnabled = false;
+	backgroundCtx.msImageSmoothingEnabled = false;
+	backgroundCtx.imageSmoothingEnabled = false;
 
 	this.background = new TiledCanvas(backgroundC);
 	this.public = new TiledCanvas(publicC);
@@ -158,6 +170,8 @@ Paint.prototype.addCoordDom = function addCoordDom (container) {
 	this.coordDiv = container.appendChild(document.createElement("div"));
 	this.coordDiv.className = "mouse-coords";
 
+	this.coordDiv.setAttribute("data-intro", "Here you can jump to any coordinates you would like to see. The random button brings you to a random location.");
+
 	this.coordDiv.appendChild(document.createTextNode("x:"));
 	var xInput = this.coordDiv.appendChild(document.createElement("input"));
 	this.coordDiv.appendChild(document.createTextNode("y:"));
@@ -178,6 +192,19 @@ Paint.prototype.addCoordDom = function addCoordDom (container) {
 
 	yInput.addEventListener("input", function (event) {
 		this.goto(this.public.leftTopX, parseInt(event.target.value) - this.canvasArray[0].height / this.public.zoom / 2 || 0);
+	}.bind(this));
+
+	var randomButton = this.coordDiv.appendChild(document.createElement("div"));
+	randomButton.className = "control-button random-button";
+
+	var randomButtonImage = randomButton.appendChild(document.createElement("img"));
+	randomButtonImage.src = "images/icons/randomlocation.png";
+	randomButtonImage.alt = "Jump to random location";
+	randomButtonImage.title = "Jump to random location";
+
+	randomButton.addEventListener("click", function () {
+		var maxCoords = 65536;
+		this.goto(Math.random() * maxCoords * 2 - maxCoords, Math.random() * maxCoords * 2 - maxCoords);
 	}.bind(this));
 };
 
@@ -303,8 +330,13 @@ Paint.prototype.keypress = function keypress (event) {
 		 || key == 187 || key == 43 || key == 61)
 			this.changeToolSize(++this.current_size, true);
 
+		//r
 		if (key == 114)
-			this.setRotation(this.rotation + 1 % 360);
+			this.setRotation(this.rotation + 1);
+
+		//e
+		if (key == 101)
+			this.setRotation(this.rotation - 1);
 
 		if (key == 109)
 			this.setHorizontalMirror(this.scale[0] == 1);
@@ -453,8 +485,23 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 		ctx.lineTo(x * this.public.zoom, y * this.public.zoom);
 	}
 
-	path.color = tinycolor(path.color);
-	ctx.strokeStyle = path.color.toRgbString();
+	if (path.color.type == "gradient") {
+		var lastX = path.points[path.points.length - 1][0];
+		var lastY = path.points[path.points.length - 1][1];
+
+		var gradient = ctx.createLinearGradient(path.points[0][0], path.points[0][1],
+		                                        lastX, lastY);
+
+		for (var k = 0; k < path.color.length; k++) {
+			gradient.addColorStop(path.color[k].pos, path.color[k].color);
+		}
+
+		ctx.strokeStyle = gradient;
+	} else {
+		path.color = tinycolor(path.color);
+		ctx.strokeStyle = path.color.toRgbString();
+	}
+
 	ctx.lineWidth = path.size * 2 * this.public.zoom;
 
 	ctx.lineJoin = "round";
@@ -524,7 +571,6 @@ Paint.prototype.addPathPoint = function addPathPoint (id, point) {
 // Draw the given path on the public layer and remove it
 Paint.prototype.finalizePath = function finalizePath (id) {
 	if (!this.paths[id]) {
-		console.error("Path ", id, " not known. Can't finalize.");
 		return;
 	}
 
@@ -688,6 +734,14 @@ Paint.prototype.changeTool = function changeTool (tool) {
 
 Paint.prototype._changeColor = function _changeColor (color) {
 	this.current_color = tinycolor(color);
+	this.currentColorMode = "color";
+	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
+};
+
+// Change gradient coming from the gradientcreator
+Paint.prototype._changeGradient = function _changeGradient (event) {
+	this.current_color = event.stops;
+	this.current_color.type = "gradient";
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 };
 
@@ -726,14 +780,20 @@ Paint.prototype.createControlArray = function createControlArray () {
 		image: "images/icons/grab.png",
 		title: "Change tool to grab",
 		value: "grab",
-		action: this.changeTool.bind(this)
+		action: this.changeTool.bind(this),
+		data: {
+			intro: "You can use this tool to move around."
+		}
 	}, {
 		name: "line",
 		type: "button",
 		image: "images/icons/line.png",
 		title: "Change tool to line",
 		value: "line",
-		action: this.changeTool.bind(this)
+		action: this.changeTool.bind(this),
+		data: {
+			intro: "With this tool you can make a line, the next one is a normal brush. You can also put text."
+		}
 	}, {
 		name: "brush",
 		type: "button",
@@ -754,20 +814,29 @@ Paint.prototype.createControlArray = function createControlArray () {
 		image: "images/icons/picker.png",
 		title: "Change tool to picker",
 		value: "picker",
-		action: this.changeTool.bind(this)
+		action: this.changeTool.bind(this),
+		data: {
+			intro: "Click on the canvas and your color will be changed to that value."
+		}
 	}, {
 		name: "zoom",
 		type: "button",
 		image: "images/icons/zoom.png",
 		title: "Change tool to zoom",
 		value: "zoom",
-		action: this.changeTool.bind(this)
+		action: this.changeTool.bind(this),
+		data: {
+			intro: "Click and drag to zoom in to whatever is inside the box."
+		}
 	}, {
 		name: "undo",
 		type: "button",
 		image: "images/icons/undo.png",
 		title: "Undo drawing",
-		action: this.undo.bind(this)
+		action: this.undo.bind(this),
+		data: {
+			intro: "Made a mistake? No worry just click here!"
+		}
 	}, /*{
 		name: "block",
 		type: "button",
@@ -784,14 +853,20 @@ Paint.prototype.createControlArray = function createControlArray () {
 		max: 50,
 		value: 5,
 		title: "Change the size of the tool",
-		action: this.changeToolSize.bind(this)
+		action: this.changeToolSize.bind(this),
+		data: {
+			intro: "This changes your brush, line and text size."
+		}
 	}, {
 		name: "zoom-in",
 		type: "button",
 		image: "images/icons/zoomin.png",
 		title: "Zoom in",
-		value: 2,
-		action: this.zoom.bind(this)
+		value: 1.2,
+		action: this.zoom.bind(this),
+		data: {
+			intro: "These buttons allow you to zoom in or out of the center. Respectivly zoom in, reset zoom and zoom out."
+		}
 	}, {
 		name: "zoom-reset",
 		type: "button",
@@ -804,7 +879,7 @@ Paint.prototype.createControlArray = function createControlArray () {
 		type: "button",
 		image: "images/icons/zoomout.png",
 		title: "Zoom out",
-		value: 0.5,
+		value: 1 / 1.2,
 		action: this.zoom.bind(this)
 	}, {
 		name: "tool-color",
@@ -813,6 +888,10 @@ Paint.prototype.createControlArray = function createControlArray () {
 		value: "#FFFFFF",
 		title: "Change the color of the tool",
 		action: this._changeColor.bind(this)
+	}, {
+		name: "gradient",
+		type: "gradient",
+		action: this._changeGradient.bind(this)
 	}];
 };
 
@@ -827,9 +906,7 @@ Paint.prototype.zoom = function zoom (zoomFactor) {
 	this.background.relativeZoom(zoomFactor);
 	this.local.relativeZoom(zoomFactor);
 
-	this.public.goto(newX, newY);
-	this.background.goto(newX, newY);
-	this.local.goto(newX, newY);
+	this.goto(newX, newY);
 
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 	this.redrawPaths();
@@ -846,9 +923,7 @@ Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
 	this.background.absoluteZoom(zoomFactor);
 	this.local.absoluteZoom(zoomFactor);
 
-	this.public.goto(newX, newY);
-	this.background.goto(newX, newY);
-	this.local.goto(newX, newY);
+	this.goto(newX, newY);
 
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 	this.redrawPaths();
@@ -928,6 +1003,10 @@ Paint.prototype.tools = {
 		if (event == "remove") {
 			delete paint.lastZoomPoint;
 			paint.effectsCanvas.style.cursor = "";
+
+			if (typeof paint.effectsCanvasCtx.setLineDash == "function")
+				paint.effectsCanvasCtx.setLineDash([]);
+
 			return;
 		}
 
@@ -1128,7 +1207,17 @@ Paint.prototype.tools = {
 			var context = paint.effectsCanvasCtx;
 			context.beginPath();
 			context.arc(scaledCoords[0], scaledCoords[1], paint.current_size * paint.local.zoom, 0, 2 * Math.PI, true);
-			context.fillStyle = paint.current_color.toRgbString();
+
+			if (paint.current_color.type == "gradient") {
+				if (!paint.current_color[0]) {
+					context.fillStyle = "black";
+				} else {
+					context.fillStyle = paint.current_color[0].color.toRgbString();	
+				}
+			} else {
+				context.fillStyle = paint.current_color.toRgbString();
+			}
+
 			context.fill();
 
 			// Save the last move point for efficient clearing
@@ -1205,7 +1294,7 @@ Paint.prototype.tools = {
 		if ((event.type == "mouseup" || event.type == "touchend") && paint.textToolInput.value) {
 			paint.addUserDrawing({
 				type: "text",
-				text: paint.textToolInput.value || "",
+				text: paint.textToolInput.value.slice(0, 256) || "",
 				x: Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
 				y: Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)),
 				size: paint.current_size,
@@ -1226,9 +1315,9 @@ Paint.prototype.tools = {
 			                                 paint.current_size * paint.local.zoom * 2);
 
 			paint.effectsCanvasCtx.fillStyle = paint.current_color.toRgbString();
-			paint.effectsCanvasCtx.fillText(paint.textToolInput.value, scaledCoords[0], scaledCoords[1]);
+			paint.effectsCanvasCtx.fillText(paint.textToolInput.value.slice(0, 256), scaledCoords[0], scaledCoords[1]);
 
-			paint.lastToolText = paint.textToolInput.value;
+			paint.lastToolText = paint.textToolInput.value.slice(0, 256);
 			paint.lastMovePoint = scaledCoords;
 		}
 
@@ -1241,8 +1330,8 @@ Paint.prototype.tools = {
 			                                 paint.current_size * paint.local.zoom * 2);
 
 			paint.effectsCanvasCtx.fillStyle = paint.current_color.toRgbString();
-			paint.effectsCanvasCtx.fillText(paint.textToolInput.value, paint.lastMovePoint[0], paint.lastMovePoint[1]);
-			paint.lastToolText = paint.textToolInput.value;
+			paint.effectsCanvasCtx.fillText(paint.textToolInput.value.slice(0, 256), paint.lastMovePoint[0], paint.lastMovePoint[1]);
+			paint.lastToolText = paint.textToolInput.value.slice(0, 256);
 		}
 	}
 };

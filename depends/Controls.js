@@ -34,7 +34,9 @@ Controls.prototype.createControl = function createControl (control) {
 
 	// Control is not defined
 	console.error("Unknown control: " + control.type, control);
-	return document.createTextNode("Unknown control: " + control.type);
+	return {
+		containerAppend: document.createTextNode("Unknown control: " + control.type)
+	};
 };
 
 // Object that holds all the contruction functions for the controllers
@@ -64,6 +66,10 @@ Controls.prototype.constructors.button = function createButton (control) {
 
 	if (control.title)
 		input.title = control.title;
+
+	if (control.data)
+		for (var datakey in control.data)
+			input.setAttribute("data-" + datakey, control.data[datakey]);
 
 	input.addEventListener("click", function (event) {
 		control.action(input.value);
@@ -97,6 +103,10 @@ Controls.prototype.constructors.integer = function createIntegerInput (control) 
 
 	if (control.min)
 		input.min = control.min;
+
+	if (control.data)
+		for (var datakey in control.data)
+			input.setAttribute("data-" + datakey, control.data[datakey]);
 
 	input.addEventListener("input", function () {
 		control.action(input.value);
@@ -152,6 +162,10 @@ Controls.prototype.constructors.text = function createTextInput (control) {
 	if (control.min)
 		input.min = control.min;
 
+	if (control.data)
+		for (var datakey in control.data)
+			input.setAttribute("data-" + datakey, control.data[datakey]);
+
 	input.addEventListener("input", function () {
 		control.action(input.value);
 	});
@@ -168,6 +182,10 @@ Controls.prototype.constructors.color = function createColorInput (control) {
 	input.type = "text";
 	input.value = control.value;
 	input.className = (control.classAppend || "") + "control-color-input";
+
+	if (control.data)
+		for (var datakey in control.data)
+			input.setAttribute("data-" + datakey, control.data[datakey]);
 
 	var returnData = {
 		input: input,
@@ -189,4 +207,18 @@ Controls.prototype.constructors.color = function createColorInput (control) {
 	};
 
 	return returnData;
+};
+
+Controls.prototype.constructors.gradient = function createGradientInput (control) {
+	var gradientDom = document.createElement("div");
+	gradientDom.className = (control.classAppend || "") + "control-gradient";
+
+	var gradientCreator = new GradientCreator(gradientDom);
+	gradientCreator.addEventListener("change", control.action)
+
+	return {
+		input: gradientDom,
+		containerAppend: gradientDom,
+		gradientCreator: gradientCreator
+	};
 };
