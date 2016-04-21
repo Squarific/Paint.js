@@ -125,6 +125,15 @@ GradientCreator.prototype.createStop = function createStop (stop) {
 		this.changeColorOf(stopDom);
 	}.bind(this))
 
+	stopDom.addEventListener("dblclick", function (event) {
+		stopDom.parentNode.removeChild(stopDom);
+
+		if (event.stopPropagation) event.stopPropagation();
+		event.cancelBubble = true;
+
+		this.rerender();
+	}.bind(this))
+
 	this.rerender();
 };
 

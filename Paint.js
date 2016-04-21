@@ -485,8 +485,23 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 		ctx.lineTo(x * this.public.zoom, y * this.public.zoom);
 	}
 
-	path.color = tinycolor(path.color);
-	ctx.strokeStyle = path.color.toRgbString();
+	if (path.color.type == "gradient") {
+		var lastX = path.points[path.points.length - 1][0];
+		var lastY = path.points[path.points.length - 1][1];
+
+		var gradient = ctx.createLinearGradient(path.points[0][0], path.points[0][1],
+		                                        lastX, lastY);
+
+		for (var k = 0; k < path.color.length; k++) {
+			gradient.addColorStop(path.color[k].pos, path.color[k].color);
+		}
+
+		ctx.strokeStyle = gradient;
+	} else {
+		path.color = tinycolor(path.color);
+		ctx.strokeStyle = path.color.toRgbString();
+	}
+
 	ctx.lineWidth = path.size * 2 * this.public.zoom;
 
 	ctx.lineJoin = "round";
@@ -719,12 +734,15 @@ Paint.prototype.changeTool = function changeTool (tool) {
 
 Paint.prototype._changeColor = function _changeColor (color) {
 	this.current_color = tinycolor(color);
+	this.currentColorMode = "color";
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 };
 
 // Change gradient coming from the gradientcreator
 Paint.prototype._changeGradient = function _changeGradient (event) {
-	console.log(event);
+	this.current_color = event.stops;
+	this.current_color.type = "gradient";
+	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 };
 
 Paint.prototype.changeToolSize = function changeToolSize (size, setinput) {
@@ -1189,7 +1207,17 @@ Paint.prototype.tools = {
 			var context = paint.effectsCanvasCtx;
 			context.beginPath();
 			context.arc(scaledCoords[0], scaledCoords[1], paint.current_size * paint.local.zoom, 0, 2 * Math.PI, true);
-			context.fillStyle = paint.current_color.toRgbString();
+
+			if (paint.current_color.type == "gradient") {
+				if (!paint.current_color[0]) {
+					context.fillStyle = "black";
+				} else {
+					context.fillStyle = paint.current_color[0].color.toRgbString();	
+				}
+			} else {
+				context.fillStyle = paint.current_color.toRgbString();
+			}
+
 			context.fill();
 
 			// Save the last move point for efficient clearing
