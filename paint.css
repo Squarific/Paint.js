@@ -17,6 +17,14 @@
 	-ms-interpolation-mode: nearest-neighbor;   /* IE                            */
 }
 
+.control-gradient {
+    display: inline-block;
+    width: 20em;
+    height: 1em;
+    vertical-align: top;
+    margin-left: 2em;
+}
+
 .paint-canvas-background {
 	background-image: url("images/transparent.png");
 }

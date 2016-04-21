@@ -34,7 +34,9 @@ Controls.prototype.createControl = function createControl (control) {
 
 	// Control is not defined
 	console.error("Unknown control: " + control.type, control);
-	return document.createTextNode("Unknown control: " + control.type);
+	return {
+		containerAppend: document.createTextNode("Unknown control: " + control.type)
+	};
 };
 
 // Object that holds all the contruction functions for the controllers
@@ -205,4 +207,18 @@ Controls.prototype.constructors.color = function createColorInput (control) {
 	};
 
 	return returnData;
+};
+
+Controls.prototype.constructors.gradient = function createGradientInput (control) {
+	var gradientDom = document.createElement("div");
+	gradientDom.className = (control.classAppend || "") + "control-gradient";
+
+	var gradientCreator = new GradientCreator(gradientDom);
+	gradientCreator.addEventListener("change", control.action)
+
+	return {
+		input: gradientDom,
+		containerAppend: gradientDom,
+		gradientCreator: gradientCreator
+	};
 };

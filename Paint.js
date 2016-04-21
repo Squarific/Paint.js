@@ -722,6 +722,11 @@ Paint.prototype._changeColor = function _changeColor (color) {
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 };
 
+// Change gradient coming from the gradientcreator
+Paint.prototype._changeGradient = function _changeGradient (event) {
+	console.log(event);
+};
+
 Paint.prototype.changeToolSize = function changeToolSize (size, setinput) {
 	if (this.brushing) return;
 
@@ -865,6 +870,10 @@ Paint.prototype.createControlArray = function createControlArray () {
 		value: "#FFFFFF",
 		title: "Change the color of the tool",
 		action: this._changeColor.bind(this)
+	}, {
+		name: "gradient",
+		type: "gradient",
+		action: this._changeGradient.bind(this)
 	}];
 };
 
