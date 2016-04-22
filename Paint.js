@@ -478,19 +478,26 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 	    y = path.points[0][1] - this.public.leftTopY;
 	ctx.moveTo(x * this.public.zoom, y * this.public.zoom);
 
+	var minX = Infinity;
+	var minY = Infinity;
+	var maxX = -Infinity;
+	var maxY = -Infinity;
+
 	// Connect a line between all points
 	for (var pointId = 1; pointId < path.points.length; pointId++) {
 		var x = path.points[pointId][0] - this.public.leftTopX,
 		    y = path.points[pointId][1] - this.public.leftTopY;
 		ctx.lineTo(x * this.public.zoom, y * this.public.zoom);
+		if (x < minX) minX = x;
+		if (x > maxX) maxX = x;
 	}
 
 	if (path.color.type == "gradient") {
 		var lastX = path.points[path.points.length - 1][0];
 		var lastY = path.points[path.points.length - 1][1];
 
-		var gradient = ctx.createLinearGradient(path.points[0][0], path.points[0][1],
-		                                        lastX, lastY);
+		var gradient = ctx.createLinearGradient(minX, 0,
+		                                        maxX, 0);
 
 		for (var k = 0; k < path.color.length; k++) {
 			gradient.addColorStop(path.color[k].pos, path.color[k].color);

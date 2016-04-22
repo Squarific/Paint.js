@@ -16,10 +16,25 @@ function GradientCreator (container) {
 
 GradientCreator.prototype.INITIAL_STOPS = [{
 	pos: 0,
-	color: "black"
+	color: "rgba(255, 0, 0, 1)"
+}, {
+	pos: 0.15,
+	color: "rgba(255, 255, 0, 1)"
+}, {
+	pos: 0.3,
+	color: "rgba(0, 255, 0, 1)"
+}, {
+	pos: 0.5,
+	color: "rgba(0, 255, 255, 1)"
+}, {
+	pos: 0.65,
+	color: "rgba(0, 0, 255, 1)"
+}, {
+	pos: 0.80,
+	color: "rgba(255, 0, 255, 1)"
 }, {
 	pos: 1,
-	color: "white"
+	color: "rgba(255, 0, 0, 1)"
 }];
 
 /*
