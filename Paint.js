@@ -836,6 +836,16 @@ Paint.prototype.createControlArray = function createControlArray () {
 			intro: "Click and drag to zoom in to whatever is inside the box."
 		}
 	}, {
+		name: "select",
+		type: "button",
+		image: "images/icons/select.png",
+		title: "Change tool to select",
+		value: "select",
+		action: this.changeTool.bind(this),
+		data: {
+			intro: "Click and drag to select an area."
+		}
+	}, {
 		name: "undo",
 		type: "button",
 		image: "images/icons/undo.png",
@@ -1085,6 +1095,76 @@ Paint.prototype.tools = {
 			context.rect(minX, minY, width, height);
 			context.lineWidth = 3;
 			context.strokeStyle = "gray";
+			context.stroke();
+		}	
+	},
+	select: function select (paint, event) {
+		if (event == "remove") {
+			delete paint.lastSelectPoint;
+			paint.effectsCanvas.style.cursor = "";
+
+			if (typeof paint.effectsCanvasCtx.setLineDash == "function")
+				paint.effectsCanvasCtx.setLineDash([]);
+
+			return;
+		}
+
+		paint.effectsCanvas.style.cursor = "cell";
+
+		// Get the coordinates relative to the canvas
+		var targetCoords = paint.getCoords(event);
+		var scaledCoords = paint.scaledCoords(targetCoords, event);
+
+		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastSelectPoint) {
+			paint.lastSelectPoint = scaledCoords;
+		}
+
+		if (event.type == "mouseup" || event.type == "touchend") {
+			// If mouseup is on the same point as mousedown we switch behaviour by making
+			// a box between two clicks instead of dragging the box around
+			if (paint.lastSelectPoint[0] == scaledCoords[0] && paint.lastSelectPoint[1] == scaledCoords[1]) {
+				return;
+			}
+
+			var x1 = Math.round(paint.local.leftTopX + (paint.lastSelectPoint[0] / paint.local.zoom));
+			var y1 = Math.round(paint.local.leftTopY + (paint.lastSelectPoint[1] / paint.local.zoom));
+
+			var x2 = Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom));
+			var y2 = Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom));
+
+			paint.dispatchEvent({
+				type: "select",
+				from: [x1, y1],
+				to: [x2, y2]
+			});
+
+			delete paint.lastSelectPoint;
+			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
+		}
+
+		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastSelectPoint) {
+			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
+
+			var x1 = scaledCoords[0];
+			var y1 = scaledCoords[1];
+			var x2 = paint.lastSelectPoint[0];
+			var y2 = paint.lastSelectPoint[1];
+
+			var minX = Math.min(x1, x2);
+			var minY = Math.min(y1, y2);
+
+			var width = Math.abs(x1 - x2);
+			var height = Math.abs(y1 - y2);
+
+			var context = paint.effectsCanvasCtx;
+			context.beginPath();
+
+			if (typeof context.setLineDash == "function")
+				context.setLineDash([4]);
+
+			context.rect(minX, minY, width, height);
+			context.lineWidth = 2;
+			context.strokeStyle = "darkgray";
 			context.stroke();
 		}	
 	},
