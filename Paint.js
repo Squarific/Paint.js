@@ -406,6 +406,16 @@ Paint.prototype.keyup = function keyup (event) {
 	}
 };
 
+Paint.prototype.exportImage = function exportImage (from, to) {
+	var canvas = document.createElement("canvas");
+	canvas.width = Math.abs(from[0] - to[0]);
+	canvas.height = Math.abs(from[1] - to[1]);
+
+	this.background.drawToCanvas(canvas, from, to);
+
+	// TODO: download
+};
+
 Paint.prototype.redrawLocalDrawings = function redrawLocalDrawings () {
 	this.redrawLocals();
 };
@@ -905,11 +915,11 @@ Paint.prototype.createControlArray = function createControlArray () {
 		value: "#FFFFFF",
 		title: "Change the color of the tool",
 		action: this._changeColor.bind(this)
-	}, {
+	}/*, {
 		name: "gradient",
 		type: "gradient",
 		action: this._changeGradient.bind(this)
-	}];
+	}*/];
 };
 
 Paint.prototype.zoom = function zoom (zoomFactor) {

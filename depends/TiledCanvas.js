@@ -79,6 +79,35 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
     }
 };
 
+TiledCanvas.prototype.drawToCanvas = function drawToCanvas (canvas, from, to) {
+    var minX = Math.min(from[0], to[0]),
+        maxX = Math.max(from[0], to[0]),
+        minY = Math.min(from[1], to[1]),
+        maxY = Math.max(from[1], to[1]);
+
+    var width = maxX - minX,
+        height = maxY - minY;
+
+    var startChunkX = Math.floor(minX / this.settings.chunkSize),
+        endChunkX   = Math.ceil((minX + width) / this.settings.chunkSize),
+        startChunkY = Math.floor(minY / this.settings.chunkSize),
+        endChunkY   = Math.ceil((maxY + height) / this.settings.chunkSize);
+
+    var ctx = canvas.getContext("2d");
+    
+    for (var chunkX = startChunkX; chunkX < endChunkX; chunkX++) {
+        for (var chunkY = startChunkY; chunkY < endChunkY; chunkY++) {
+            if (this.chunks[chunkX] && this.chunks[chunkX][chunkY] && this.chunks[chunkX][chunkY] !== "empty") {
+                ctx.drawImage(
+                    this.chunks[chunkX][chunkY].canvas,
+                    chunkX * this.settings.chunkSize - minX,
+                    chunkY * this.settings.chunkSize - minY
+                );
+            }
+        }
+    }
+};
+
 TiledCanvas.prototype.drawChunk = function drawChunk (chunkX, chunkY) {
     if (this.chunks[chunkX] && this.chunks[chunkX][chunkY]) {
         if (this.chunks[chunkX][chunkY] == "empty") return;
