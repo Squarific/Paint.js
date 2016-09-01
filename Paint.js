@@ -237,32 +237,6 @@ Paint.prototype.addCoordDom = function addCoordDom (container) {
 	
 	this.favoritesContainer = favoritesWindow.appendChild(document.createElement("div"));
 	this.favoritesContainer.className = "favorites-container";	
-	
-	//temporary favorite example
-	/*
-	var favoriteContainer = favoritesContainer.appendChild(document.createElement("div"));
-	favoriteContainer.className = "favorite-container";
-	
-	var favoritePlusButton = favoriteContainer.appendChild(document.createElement("div"));
-	favoritePlusButton.className = "fav-button fav-plus-button";
-	favoritePlusButton.innerHTML = "+";
-	
-	var favoritePencilButton = favoriteContainer.appendChild(document.createElement("div"));
-	favoritePencilButton.className = "fav-button fav-pencil-button";
-	favoritePencilButton.innerHTML = "✎";
-	
-	var favoriteRenameContainer = favoritePencilButton.appendChild(document.createElement("div"));
-	favoriteRenameContainer.className = "fav-rename-container";
-	
-	var favoriteRenameInput = favoriteRenameContainer.appendChild(document.createElement("input"));
-	favoriteRenameInput.className = "fav-rename-input";
-	favoriteRenameInput.type = "text";
-	
-	
-	var favoriteCoorButton = favoriteContainer.appendChild(document.createElement("div"));
-	favoriteCoorButton.className = "fav-button fav-coor-button";
-	favoriteCoorButton.innerHTML = "0,0";
-	*/
 };
 Paint.prototype.searchAndUpdateIndividualFavoriteDom = function searchAndUpdateIndividualFavoriteDom(newX, newY, newName, newOwner, x, y, name, owner) {
 	var childArr = this.favoritesContainer.chindren; 
@@ -293,7 +267,6 @@ Paint.prototype.updateIndividualFavoriteDom = function updateIndividualFavoriteD
 		coordinateButton.innerHTML = (newName || element.dataset.name);
 		coordinateButton.title = (newX || element.dataset.x) + "," + (newY || element.dataset.y);
 	}
-	
 	
 };
 
@@ -341,10 +314,8 @@ Paint.prototype.insertOneFavorite = function insertOneFavorite(x, y, name, owner
 		var name = e.srcElement.parentElement.dataset.name;
 		var centerX = parseInt(this.paint.public.leftTopX + screenSize[0] / 2);
 		var centerY = parseInt(this.paint.public.leftTopY + screenSize[1] / 2);                  
-		console.log(centerX, centerY);
 		if(e.srcElement.classList.contains("fav-button-confirmation")){
 			e.srcElement.classList.remove("fav-button-confirmation");
-			console.log("set");
 			this.setCoordFavorite(centerX, centerY, x, y, name, e.srcElement.parentElement);
 		}
 		else {
@@ -364,7 +335,6 @@ Paint.prototype.insertOneFavorite = function insertOneFavorite(x, y, name, owner
 		
 		var centerX = parseInt(this.paint.public.leftTopX + screenSize[0] / 2);
 		var centerY = parseInt(this.paint.public.leftTopY + screenSize[1] / 2);                   
-		console.log(centerX, centerY);
 		e.srcElement.title = "Change to " + centerX + "," + centerY + " ?";
 	}.bind(drawTogether));
 	
@@ -391,7 +361,6 @@ Paint.prototype.insertOneFavorite = function insertOneFavorite(x, y, name, owner
 			drawTogether.renameFavorite(x, y, newName, greatgrandfather);
 		}.bind(e), 1500);
 	}.bind(this));
-	//this._favoriteRenameDelayTimeout
 	
 	var favoriteCoorButton = favoriteContainer.appendChild(document.createElement("div"));
 	favoriteCoorButton.className = "fav-button fav-coor-button";
@@ -399,11 +368,8 @@ Paint.prototype.insertOneFavorite = function insertOneFavorite(x, y, name, owner
 		
 		var x = parseInt(e.srcElement.parentElement.dataset.x);
 		var y = parseInt(e.srcElement.parentElement.dataset.y);
-		console.log( x, y);
 		drawTogether.moveScreenToPosition([x,y],0);
-		//drawTogether.moveScreenToPosition([e.srcElement.parentElement.dataset.x, e.srcElement.parentElement.dataset.y], 0);
 	}.bind(this));
-	//this.moveScreenToPosition(targetPosMiddle, 0);
 	
 	if(name.length > 0){ 
 		favoriteCoorButton.innerHTML = name;
@@ -432,7 +398,6 @@ Paint.prototype.updateFavoriteDom = function updateFavoriteDom(favorites) {
 	{		
 		this.insertOneFavorite(favorites[x]['x'], favorites[x]['y'], favorites[x]['name'], favorites[x]['owner'])
 	}
-	//end for
 };
 Paint.prototype.setMouseCoords = function setMouseCoords (x, y) {
 	// Assume first input is x, second is y
