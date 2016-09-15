@@ -663,6 +663,7 @@ Paint.prototype.addUserPathPoint = function dispatchPathPoint (point) {
 
 Paint.prototype.endUserPath = function endUserPath () {
 	var lastPath = this.localUserPaths[this.localUserPaths.length - 1];
+	
 	if (typeof lastPath != 'undefined'){
 		this.dispatchEvent({
 			type: "enduserpath",
