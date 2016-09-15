@@ -664,12 +664,13 @@ Paint.prototype.addUserPathPoint = function dispatchPathPoint (point) {
 Paint.prototype.endUserPath = function endUserPath () {
 	var lastPath = this.localUserPaths[this.localUserPaths.length - 1];
 	
-	if (typeof lastPath != 'undefined'){
-		this.dispatchEvent({
-			type: "enduserpath",
-			removePath: this.removeUserPath.bind(this, lastPath)
-		});
-	}
+	if (typeof lastPath != 'undefined')
+		return;
+	
+	this.dispatchEvent({
+		type: "enduserpath",
+		removePath: this.removeUserPath.bind(this, lastPath)
+	});
 };
 
 Paint.prototype.removeUserPathPoint = function removeUserPathPoint (path, point) {
