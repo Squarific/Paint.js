@@ -42,6 +42,7 @@ function Paint (container, settings) {
 }
 
 Paint.prototype.MAX_RANDOM_COORDS = 65536;
+Paint.prototype.FIX_CANVAS_PIXEL_SIZE = 0.5;
 
 Paint.prototype.defaultSettings = {
 	maxSize: 50,
@@ -491,7 +492,7 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 	ctx.beginPath();
 	var x = path.points[0][0] - this.public.leftTopX,
 	    y = path.points[0][1] - this.public.leftTopY;
-	ctx.moveTo(x * this.public.zoom, y * this.public.zoom);
+	ctx.moveTo(x * this.public.zoom, y * this.public.zoom + FIX_CANVAS_PIXEL_SIZE);
 
 	var minX = Infinity;
 	var minY = Infinity;
@@ -524,7 +525,7 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 		ctx.strokeStyle = path.color.toRgbString();
 	}
 
-	ctx.lineWidth = path.size * 2 * this.public.zoom;
+	ctx.lineWidth = path.size * this.public.zoom;
 
 	ctx.lineJoin = "round";
 	ctx.lineCap = "round";
