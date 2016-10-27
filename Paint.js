@@ -456,11 +456,11 @@ Paint.prototype.drawPathTiledCanvas = function drawPathTiledCanvas (path, ctx, t
 
 	// Start on the first point
 	ctx.beginPath();
-	ctx.moveTo(path.points[0][0], path.points[0][1]);
+	ctx.moveTo(path.points[0][0], path.points[0][1] + this.FIX_CANVAS_PIXEL_SIZE); // Might not be necessary
 
 	// Connect a line between all points
 	for (var pointId = 1; pointId < path.points.length; pointId++) {
-		ctx.lineTo(path.points[pointId][0], path.points[pointId][1]);
+		ctx.lineTo(path.points[pointId][0], path.points[pointId][1] + this.FIX_CANVAS_PIXEL_SIZE); // Might not be necessary
 
 		minX = Math.min(path.points[pointId][0], minX);
 		minY = Math.min(path.points[pointId][1], minY);
@@ -469,7 +469,7 @@ Paint.prototype.drawPathTiledCanvas = function drawPathTiledCanvas (path, ctx, t
 	}
 
 	ctx.strokeStyle = path.color.toRgbString();
-	ctx.lineWidth = path.size * 2;
+	ctx.lineWidth = path.size; // Might not be necessary
 
 	ctx.lineJoin = "round";
 	ctx.lineCap = "round";
@@ -492,7 +492,7 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 	ctx.beginPath();
 	var x = path.points[0][0] - this.public.leftTopX,
 	    y = path.points[0][1] - this.public.leftTopY;
-	ctx.moveTo(x * this.public.zoom, y * this.public.zoom + FIX_CANVAS_PIXEL_SIZE);
+	ctx.moveTo(x * this.public.zoom, y * this.public.zoom + this.FIX_CANVAS_PIXEL_SIZE);
 
 	var minX = Infinity;
 	var minY = Infinity;
@@ -503,7 +503,7 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 	for (var pointId = 1; pointId < path.points.length; pointId++) {
 		var x = path.points[pointId][0] - this.public.leftTopX,
 		    y = path.points[pointId][1] - this.public.leftTopY;
-		ctx.lineTo(x * this.public.zoom, y * this.public.zoom);
+		ctx.lineTo(x * this.public.zoom, y * this.public.zoom + this.FIX_CANVAS_PIXEL_SIZE);
 		if (x < minX) minX = x;
 		if (x > maxX) maxX = x;
 	}
