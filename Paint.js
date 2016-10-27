@@ -786,7 +786,7 @@ Paint.prototype.changeToolSize = function changeToolSize (size, setinput) {
 	if (this.lastMovePoint) {
 		var context = this.effectsCanvasCtx;
 		context.beginPath();
-		context.arc(this.lastMovePoint[0], this.lastMovePoint[1], this.current_size * this.local.zoom, 0, 2 * Math.PI, true);
+		context.arc(this.lastMovePoint[0], this.lastMovePoint[1], (this.current_size * this.local.zoom) / 2, 0, 2 * Math.PI, true);
 		context.fillStyle = this.current_color.toRgbString();
 		context.fill();
 	}
@@ -1248,7 +1248,7 @@ Paint.prototype.tools = {
 				y: Math.round(paint.local.leftTopY + (paint.lastLinePoint[1] / paint.local.zoom)),
 				x1: Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
 				y1: Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)),
-				size: paint.current_size * 2,
+				size: paint.current_size,
 				color: paint.current_color
 			});
 
@@ -1262,7 +1262,7 @@ Paint.prototype.tools = {
 			// TODO refactor this to use drawFunctions
 			var context = paint.effectsCanvasCtx;
 			context.beginPath();
-			context.arc(paint.lastLinePoint[0], paint.lastLinePoint[1], paint.current_size * paint.local.zoom, 0, 2 * Math.PI, true);
+			context.arc(paint.lastLinePoint[0], paint.lastLinePoint[1], (paint.current_size * paint.local.zoom) / 2, 0, 2 * Math.PI, true);
 			context.fillStyle = paint.current_color.toRgbString();
 			context.fill();
 
@@ -1270,11 +1270,11 @@ Paint.prototype.tools = {
 			context.moveTo(paint.lastLinePoint[0], paint.lastLinePoint[1]);
 			context.lineTo(scaledCoords[0], scaledCoords[1]);			
 			context.strokeStyle = paint.current_color.toRgbString();
-			context.lineWidth = paint.current_size * paint.local.zoom * 2;
+			context.lineWidth = paint.current_size * paint.local.zoom ;
 			context.stroke();
 
 			context.beginPath();
-			context.arc(scaledCoords[0], scaledCoords[1], paint.current_size * paint.local.zoom, 0, 2 * Math.PI, true);
+			context.arc(scaledCoords[0], scaledCoords[1], (paint.current_size * paint.local.zoom) / 2, 0, 2 * Math.PI, true);
 			context.fillStyle = paint.current_color.toRgbString();
 			context.fill();			
 		}
@@ -1312,7 +1312,7 @@ Paint.prototype.tools = {
 			// Draw the current mouse position
 			var context = paint.effectsCanvasCtx;
 			context.beginPath();
-			context.arc(scaledCoords[0], scaledCoords[1], paint.current_size * paint.local.zoom, 0, 2 * Math.PI, true);
+			context.arc(scaledCoords[0], scaledCoords[1], (paint.current_size * paint.local.zoom) / 2, 0, 2 * Math.PI, true);
 
 			if (paint.current_color.type == "gradient") {
 				if (!paint.current_color[0]) {
@@ -1469,8 +1469,8 @@ Paint.prototype.drawFunctions = {
 	line: function (context, drawing, tiledCanvas) {
 		context.beginPath();
 
-		context.moveTo(drawing.x, drawing.y);
-		context.lineTo(drawing.x1, drawing.y1);
+		context.moveTo(drawing.x, drawing.y + this.FIX_CANVAS_PIXEL_SIZE);
+		context.lineTo(drawing.x1, drawing.y1 + this.FIX_CANVAS_PIXEL_SIZE);
 		
 		context.strokeStyle = drawing.color.toRgbString();
 		context.lineWidth = drawing.size;
