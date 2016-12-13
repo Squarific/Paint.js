@@ -32,11 +32,14 @@ function Paint (container, settings) {
 	// The server still has to write them to image
 	// They could still be undone
 	this.publicdrawings = [];
+	
+	this.altPressed = false;
 
 	window.addEventListener("resize", this.resize.bind(this));
 	window.addEventListener("keypress", this.keypress.bind(this));
 	window.addEventListener("keydown", this.keydown.bind(this));
 	window.addEventListener("keyup", this.keyup.bind(this));
+	window.addEventListener('wheel', this.wheel.bind(this));
 
 	//introJs().setOptions({ 'tooltipPosition': 'auto', 'showProgress': true }).start();
 }
@@ -383,6 +386,7 @@ Paint.prototype.keydown = function keydown (event) {
 		if (this.current_tool !== "picker" && key == 18) {
 			this.previous_tool = this.current_tool;
 			this.changeTool("picker");
+			this.altPressed = true;
 		}
 
 		if (event.ctrlKey && event.keyCode == 90) {
@@ -404,7 +408,26 @@ Paint.prototype.keyup = function keyup (event) {
 
 		if (this.current_tool == "picker" && key == 18 && this.previous_tool) {
 			this.changeTool(this.previous_tool);
+			this.altPressed = false;
 		}
+	}
+};
+
+Paint.prototype.wheel = function wheel (event) { // <---- new function
+
+	if (this.altPressed) {
+		console.log("Wheel", event);
+
+		if (event.deltaY < 0){
+			//scrolling up
+			this.zoom(1.1);
+		}
+		
+		if (event.deltaY > 0){
+			//scrolling down
+			this.zoom(1 / 1.1);
+		}
+		
 	}
 };
 
