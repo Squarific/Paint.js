@@ -17,7 +17,7 @@ function TiledCanvas (canvas, settings) {
 }
 
 TiledCanvas.prototype.defaultSettings = {
-    chunkSize: 256,
+    chunkSize: 1024,
     fadeTime: 500
 };
 
