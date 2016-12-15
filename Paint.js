@@ -433,7 +433,7 @@ Paint.prototype.wheel = function wheel (event) { // <---- new function
 
 // From, to: [x, y]
 // Returns a data url
-Paint.prototype.exportImage = function exportImage (from, to) {
+Paint.prototype.exportImage = function exportImage (from, to, returnCanvas) {
 	var canvas = document.createElement("canvas");
 	canvas.width = Math.abs(from[0] - to[0]);
 	canvas.height = Math.abs(from[1] - to[1]);
@@ -441,6 +441,7 @@ Paint.prototype.exportImage = function exportImage (from, to) {
 	this.background.drawToCanvas(canvas, from, to);
 	this.public.drawToCanvas(canvas, from, to);
 
+	if (returnCanvas) return canvas;
 	return canvas.toDataURL();
 };
 
