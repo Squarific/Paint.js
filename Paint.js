@@ -45,9 +45,10 @@ function Paint (container, settings) {
 }
 
 Paint.prototype.MAX_RANDOM_COORDS = 65536;
+Paint.prototype.FIX_CANVAS_PIXEL_SIZE = 0.5;
 
 Paint.prototype.defaultSettings = {
-	maxSize: 50,
+	maxSize: 100,
 	maxLineLength: 200
 };
 
@@ -479,11 +480,11 @@ Paint.prototype.drawPathTiledCanvas = function drawPathTiledCanvas (path, ctx, t
 
 	// Start on the first point
 	ctx.beginPath();
-	ctx.moveTo(path.points[0][0], path.points[0][1]);
+	ctx.moveTo(path.points[0][0], path.points[0][1] + this.FIX_CANVAS_PIXEL_SIZE); // Might not be necessary
 
 	// Connect a line between all points
 	for (var pointId = 1; pointId < path.points.length; pointId++) {
-		ctx.lineTo(path.points[pointId][0], path.points[pointId][1]);
+		ctx.lineTo(path.points[pointId][0], path.points[pointId][1] + this.FIX_CANVAS_PIXEL_SIZE); // Might not be necessary
 
 		minX = Math.min(path.points[pointId][0], minX);
 		minY = Math.min(path.points[pointId][1], minY);
@@ -492,7 +493,7 @@ Paint.prototype.drawPathTiledCanvas = function drawPathTiledCanvas (path, ctx, t
 	}
 
 	ctx.strokeStyle = path.color.toRgbString();
-	ctx.lineWidth = path.size * 2;
+	ctx.lineWidth = path.size; // Might not be necessary
 
 	ctx.lineJoin = "round";
 	ctx.lineCap = "round";
@@ -515,7 +516,7 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 	ctx.beginPath();
 	var x = path.points[0][0] - this.public.leftTopX,
 	    y = path.points[0][1] - this.public.leftTopY;
-	ctx.moveTo(x * this.public.zoom, y * this.public.zoom);
+	ctx.moveTo(x * this.public.zoom, y * this.public.zoom + this.FIX_CANVAS_PIXEL_SIZE);
 
 	var minX = Infinity;
 	var minY = Infinity;
@@ -526,7 +527,7 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 	for (var pointId = 1; pointId < path.points.length; pointId++) {
 		var x = path.points[pointId][0] - this.public.leftTopX,
 		    y = path.points[pointId][1] - this.public.leftTopY;
-		ctx.lineTo(x * this.public.zoom, y * this.public.zoom);
+		ctx.lineTo(x * this.public.zoom, y * this.public.zoom + this.FIX_CANVAS_PIXEL_SIZE);
 		if (x < minX) minX = x;
 		if (x > maxX) maxX = x;
 	}
@@ -548,7 +549,7 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 		ctx.strokeStyle = path.color.toRgbString();
 	}
 
-	ctx.lineWidth = path.size * 2 * this.public.zoom;
+	ctx.lineWidth = path.size * this.public.zoom;
 
 	ctx.lineJoin = "round";
 	ctx.lineCap = "round";
@@ -809,7 +810,7 @@ Paint.prototype.changeToolSize = function changeToolSize (size, setinput) {
 	if (this.lastMovePoint) {
 		var context = this.effectsCanvasCtx;
 		context.beginPath();
-		context.arc(this.lastMovePoint[0], this.lastMovePoint[1], this.current_size * this.local.zoom, 0, 2 * Math.PI, true);
+		context.arc(this.lastMovePoint[0], this.lastMovePoint[1], (this.current_size * this.local.zoom) / 2, 0, 2 * Math.PI, true);
 		context.fillStyle = this.current_color.toRgbString();
 		context.fill();
 	}
@@ -909,7 +910,7 @@ Paint.prototype.createControlArray = function createControlArray () {
 		range: true,
 		text: "Tool size",
 		min: 1,
-		max: 50,
+		max: this.defaultSettings.maxSize,
 		value: 5,
 		title: "Change the size of the tool",
 		action: this.changeToolSize.bind(this),
@@ -1271,7 +1272,7 @@ Paint.prototype.tools = {
 				y: Math.round(paint.local.leftTopY + (paint.lastLinePoint[1] / paint.local.zoom)),
 				x1: Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
 				y1: Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)),
-				size: paint.current_size * 2,
+				size: paint.current_size,
 				color: paint.current_color
 			});
 
@@ -1285,7 +1286,7 @@ Paint.prototype.tools = {
 			// TODO refactor this to use drawFunctions
 			var context = paint.effectsCanvasCtx;
 			context.beginPath();
-			context.arc(paint.lastLinePoint[0], paint.lastLinePoint[1], paint.current_size * paint.local.zoom, 0, 2 * Math.PI, true);
+			context.arc(paint.lastLinePoint[0], paint.lastLinePoint[1], (paint.current_size * paint.local.zoom) / 2, 0, 2 * Math.PI, true);
 			context.fillStyle = paint.current_color.toRgbString();
 			context.fill();
 
@@ -1293,11 +1294,11 @@ Paint.prototype.tools = {
 			context.moveTo(paint.lastLinePoint[0], paint.lastLinePoint[1]);
 			context.lineTo(scaledCoords[0], scaledCoords[1]);			
 			context.strokeStyle = paint.current_color.toRgbString();
-			context.lineWidth = paint.current_size * paint.local.zoom * 2;
+			context.lineWidth = paint.current_size * paint.local.zoom ;
 			context.stroke();
 
 			context.beginPath();
-			context.arc(scaledCoords[0], scaledCoords[1], paint.current_size * paint.local.zoom, 0, 2 * Math.PI, true);
+			context.arc(scaledCoords[0], scaledCoords[1], (paint.current_size * paint.local.zoom) / 2, 0, 2 * Math.PI, true);
 			context.fillStyle = paint.current_color.toRgbString();
 			context.fill();			
 		}
@@ -1335,7 +1336,7 @@ Paint.prototype.tools = {
 			// Draw the current mouse position
 			var context = paint.effectsCanvasCtx;
 			context.beginPath();
-			context.arc(scaledCoords[0], scaledCoords[1], paint.current_size * paint.local.zoom, 0, 2 * Math.PI, true);
+			context.arc(scaledCoords[0], scaledCoords[1], (paint.current_size * paint.local.zoom) / 2, 0, 2 * Math.PI, true);
 
 			if (paint.current_color.type == "gradient") {
 				if (!paint.current_color[0]) {
@@ -1492,8 +1493,8 @@ Paint.prototype.drawFunctions = {
 	line: function (context, drawing, tiledCanvas) {
 		context.beginPath();
 
-		context.moveTo(drawing.x, drawing.y);
-		context.lineTo(drawing.x1, drawing.y1);
+		context.moveTo(drawing.x, drawing.y + this.FIX_CANVAS_PIXEL_SIZE);
+		context.lineTo(drawing.x1, drawing.y1 + this.FIX_CANVAS_PIXEL_SIZE);
 		
 		context.strokeStyle = drawing.color.toRgbString();
 		context.lineWidth = drawing.size;
