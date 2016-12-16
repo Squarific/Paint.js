@@ -618,7 +618,7 @@ Paint.prototype.addPathPoint = function addPathPoint (id, point) {
 Paint.prototype.generateGrid = function generateGrid (leftTop, squares, sqwidth, sqheight) {
 	this.addUserPath();
 	for (var k = 0; k < squares; k++) {
-		var localLeftTop = [leftTop[0] + squares * sqwidth, leftTop[1]]; 
+		var localLeftTop = [leftTop[0] + k * sqwidth, leftTop[1]]; 
 		this.addUserPathPoint(localLeftTop);
 		this.addUserPathPoint([localLeftTop[0] + sqwidth, localLeftTop[1]]);
 		this.addUserPathPoint([localLeftTop[0] + sqwidth, localLeftTop[1] + sqheight]);
