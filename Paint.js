@@ -123,13 +123,13 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 	// The background pngs
 	var backgroundC = container.appendChild(this.createCanvas("background"));
 	
-	// This canvas is used to display parts of the background and public
-	// The use case is to display the previous frames in an animation
-	var frameC = container.appendChild(this.createCanvas("frames"));
-	
 	// The things that have been drawn and we already know the order of
 	// but have yet to be finalized
 	var publicC = container.appendChild(this.createCanvas("public"));
+	
+	// This canvas is used to display parts of the background and public
+	// The use case is to display the previous frames in an animation
+	var frameC = container.appendChild(this.createCanvas("frames"));
 	
 	// The things we drew but the server hasn't confirmed yet
 	var localC  = container.appendChild(this.createCanvas("local"));
@@ -626,6 +626,7 @@ Paint.prototype.addPublicDrawings = function addPublicDrawings (drawings) {
 Paint.prototype.addPublicDrawing = function addPublicDrawing (drawing) {
 	this.publicdrawings.push(drawing);
 	this.drawDrawing("public", drawing);
+	this.redrawFrames();
 };
 
 Paint.prototype.undodrawings = function undodrawings (socketid, all) {
@@ -639,6 +640,7 @@ Paint.prototype.undodrawings = function undodrawings (socketid, all) {
 
 	this.public.clearAll();
 	this.drawDrawings("public", this.publicdrawings);
+	this.redrawFrames();
 };
 
 Paint.prototype.undo = function undo () {
@@ -651,6 +653,7 @@ Paint.prototype.addPath = function addPath (id, props) {
 	this.paths[id] = props;
 	this.paths[id].points = this.paths[id].points || [];
 	this.redrawPaths();
+	this.redrawFrames();
 };
 
 Paint.prototype.addPathPoint = function addPathPoint (id, point) {
@@ -661,6 +664,7 @@ Paint.prototype.addPathPoint = function addPathPoint (id, point) {
 
 	this.paths[id].points.push(point);
 	this.redrawPaths();
+	this.redrawFrames();
 };
 
 Paint.prototype.generateGrid = function generateGrid (leftTop, squares, sqwidth, sqheight, gutter) {
