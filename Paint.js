@@ -615,6 +615,7 @@ Paint.prototype.addFrame = function addFrame (from, to, frames, opacity) {
 		shift: width / frames,
 		opacity: opacity
 	});
+	this.redrawFrames();
 };
 
 Paint.prototype.addPublicDrawings = function addPublicDrawings (drawings) {
