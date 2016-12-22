@@ -7,6 +7,9 @@ function Paint (container, settings) {
 
 	this.scale = [1, 1]; // Used for horizontal and vertical mirror
 	this.rotation = 0; // Rotation in degrees
+	
+	this.frames = []; // The frames that will be displayed
+	// Contains objects of the form: {leftTop: [0,0], width: 500, height: 100, shift: 200, opacity: 0.4}
 
 	this.addCanvas(container);
 	this.resize();
@@ -58,7 +61,7 @@ Paint.prototype.defaultShortcuts = {
 
 // Redraws everything taking into account mirroring and rotation
 Paint.prototype.redrawAll = function redrawAll () {
-	for (var k = /*this.nonTiledCanvasIndex*/ 0; k < this.canvasArray.length; k++) {
+	for (var k = 0; k < this.canvasArray.length; k++) {
 		var ctx = this.canvasArray[k].getContext("2d");
 
 		ctx.save();
@@ -75,20 +78,12 @@ Paint.prototype.redrawAll = function redrawAll () {
 		ctx.translate(-this.canvasArray[k].width / 2, -this.canvasArray[k].height / 2);
 	}
 
-	// var tiledCanvasLayers = [this.background, this.public, this.local];
-
-	// for (var k = 0; k < tiledCanvasLayers.length; k++) {
-	// 	tiledCanvasLayers[k].setRotation(this.rotation);
-	// 	tiledCanvasLayers[k].setHorizontalMirror(this.scale[0]);
-	// 	tiledCanvasLayers[k].setVerticalMirror(this.scale[1]);
-	// 	tiledCanvasLayers[k].redrawOnce();
-	// }
-
 	this.background.redrawOnce();
 	this.public.redrawOnce();
 	this.local.redrawOnce();
 
 	this.redrawPaths();
+	this.redrawFrames();
 };
 
 Paint.prototype.setHorizontalMirror = function setHorizontalMirror (value) {
@@ -125,9 +120,21 @@ Paint.prototype.setRotation = function setRotation (value) {
 };
 
 Paint.prototype.addCanvas = function addCanvas (container) {
+	// The background pngs
 	var backgroundC = container.appendChild(this.createCanvas("background"));
+	
+	// This canvas is used to display parts of the background and public
+	// The use case is to display the previous frames in an animation
+	var frameC = container.appendChild(this.createCanvas("frames"));
+	
+	// The things that have been drawn and we already know the order of
+	// but have yet to be finalized
 	var publicC = container.appendChild(this.createCanvas("public"));
+	
+	// The things we drew but the server hasn't confirmed yet
 	var localC  = container.appendChild(this.createCanvas("local"));
+	
+	// Canvas for things like cursor that should always be at the top
 	var effectC = container.appendChild(this.createCanvas("effect"));
 
 	var backgroundCtx = backgroundC.getContext("2d");
@@ -138,6 +145,7 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 
 	this.background = new TiledCanvas(backgroundC);
 	this.public = new TiledCanvas(publicC);
+	this.local = new TiledCanvas(localC);
 
 	this.public.requestUserChunk = function requestPublicUserChunk (cx, cy, callback) {
 		// We actually dont have background chunks, but we have to make sure
@@ -147,8 +155,6 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 		callback();
 		this.background.requestChunk(cx, cy);
 	}.bind(this);
-
-	this.local = new TiledCanvas(localC);
 
 	this.effectsCanvas = effectC;
 	this.effectsCanvasCtx = effectC.getContext("2d");
@@ -162,14 +168,16 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 	effectC.addEventListener("touchmove", this.exectool.bind(this));
 	effectC.addEventListener("touchend", this.exectool.bind(this));
 
-	this.canvasArray = [backgroundC, publicC, localC, effectC];
+	this.canvasArray = [backgroundC, frameC, publicC, localC, effectC];
 
 	// Used as the point where new canvasses should be added
 	// This way effectC stays on top
 	this.lastCanvas = localC;
 
+	// The paths are still being drawn, they are on top of everything else
 	this.pathCanvas = this.newCanvasOnTop("paths");
 	this.pathContext = this.pathCanvas.getContext("2d");
+	this.framesContext = frameC.getContext("2d");
 };
 
 Paint.prototype.addCoordDom = function addCoordDom (container) {
@@ -277,6 +285,7 @@ Paint.prototype.goto = function goto (worldX, worldY) {
 	}
 
 	this.redrawPaths();
+	this.redrawFrames();
 	this.dispatchEvent({
 		type: "move",
 		leftTopX: worldX,
@@ -433,7 +442,8 @@ Paint.prototype.wheel = function wheel (event) { // <---- new function
 };
 
 // From, to: [x, y]
-// Returns a data url
+// Returns a data url of the background + public layer
+// Returns a canvas if returnCanvas is true
 Paint.prototype.exportImage = function exportImage (from, to, returnCanvas) {
 	var canvas = document.createElement("canvas");
 	canvas.width = Math.abs(from[0] - to[0]);
@@ -452,12 +462,35 @@ Paint.prototype.redrawLocalDrawings = function redrawLocalDrawings () {
 
 // Shedule for the paths to be redrawn in the next frame
 Paint.prototype.redrawPaths = function redrawPaths () {
-    // If a redraw is already sheduled return, unless it has been longer than
-    // 100ms, in that case something probably went wrong
-	if (this.redrawPathsTimeout && Date.now() - this.lastPathRedraw > 100) return;
+	if (this.redrawPathsTimeout) return;
 	this.redrawPathsTimeout = requestAnimationFrame(this._redrawPaths.bind(this));
 };
 
+// Shedule for the frames to be redrawn in the next frame
+Paint.prototype.redrawFrames = function redrawFrames () {
+	if (this.redrawFramesTimeout) return;
+	this.redrawFramesTimeout = requestAnimationFrame(this._redrawFrames.bind(this));
+};
+
+Paint.prototype._redrawFrames = function _redrawFrames () {
+	this.framesContext.clearRect(0, 0, this.framesContext.canvas.width, this.framesContext.canvas.height);
+	delete this.redrawFramesTimeout;
+	
+	for (var k = 0; k < this.frames.length; k++) {
+		this.drawFrame(this.frames[k], this.framesContext);
+	}
+};
+
+Paint.prototype.drawFrame = function drawFrame (frame, framesContext) {
+	// TODO: Optimization possibility: only draw frames that are in vision
+	var to = [frame.leftTop[0] + frame.width, frame.leftTop[1] + frame.height];
+	var frameCanvas = this.exportImage(frame.leftTop, to, true);
+	
+	var relativeX = frame.leftTop[0] - this.public.leftTopX;
+	var relativeY = frame.leftTop[1] - this.public.leftTopY;
+	
+	framesContext.drawImage(frameCanvas, relativeX, relativeY, frameCanvas.width * this.public.zoom, frameCanvas.height * this.public.zoom);
+};
 
 Paint.prototype._redrawPaths = function _redrawPaths () {
 	this.pathContext.clearRect(0, 0, this.pathContext.canvas.width, this.pathContext.canvas.height);
@@ -569,6 +602,19 @@ Paint.prototype.removeLocalDrawing = function removeLocalDrawing (drawing) {
 	var index = this.localDrawings.indexOf(drawing);
 	this.localDrawings.splice(index, 1);
 	this.redrawLocalDrawings();
+};
+
+// From, to: [0, 0]
+// frames: number of frames
+Paint.prototype.addFrame = function addFrame (from, to, frames, opacity) {
+	var width = Math.abs(from[0] - to[0]);
+	this.frames.push({
+		leftTop: [Math.min(from[0], to[0]), Math.min(from[1], to[1])],
+		width: width,
+		height: Math.abs(from[1] - to[1]),
+		shift: width / frames,
+		opacity: opacity
+	});
 };
 
 Paint.prototype.addPublicDrawings = function addPublicDrawings (drawings) {
@@ -983,6 +1029,7 @@ Paint.prototype.zoom = function zoom (zoomFactor) {
 
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 	this.redrawPaths();
+	this.redrawFrames();
 };
 
 Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
@@ -1000,6 +1047,7 @@ Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
 
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 	this.redrawPaths();
+	this.redrawFrames();
 };
 
 // Get the coordinates of the event relative to the upper left corner of the target element
