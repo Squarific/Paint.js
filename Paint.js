@@ -483,6 +483,8 @@ Paint.prototype._redrawFrames = function _redrawFrames () {
 
 Paint.prototype.drawFrame = function drawFrame (frame, framesContext) {
 	// TODO: Optimization possibility: only draw frames that are in vision
+	if (frame.disabled) return;
+	
 	var to = [frame.leftTop[0] + frame.width, frame.leftTop[1] + frame.height];
 	var frameCanvas = this.exportImage(frame.leftTop, to, true);
 	
