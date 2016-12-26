@@ -47,7 +47,7 @@ function Paint (container, settings) {
 	//introJs().setOptions({ 'tooltipPosition': 'auto', 'showProgress': true }).start();
 }
 
-Paint.prototype.MAX_RANDOM_COORDS = 65536;
+Paint.prototype.MAX_RANDOM_COORDS = 1048576;
 Paint.prototype.FIX_CANVAS_PIXEL_SIZE = 0.5;
 
 Paint.prototype.defaultSettings = {
