@@ -165,7 +165,7 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 		}
 		
 		return false;
-	};
+	}.bind(this);
 	
 	this.background.beforeUnloadChunk = this.public.beforeUnloadChunk;
 
