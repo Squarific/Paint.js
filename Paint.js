@@ -155,6 +155,19 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 		callback();
 		this.background.requestChunk(cx, cy);
 	}.bind(this);
+	
+	this.public.beforeUnloadChunk = function beforeUnloadChunk (cx, cy) {
+		if(this.public.canBeUnloaded(cx, cy) && this.background.canBeUnloaded(cx, cy)) {
+			console.log("Unloading chunk", cx, cy);
+			delete this.background.chunks[cx][cy];
+			delete this.public.chunks[cx][cy];
+			return true;
+		}
+		
+		return false;
+	};
+	
+	this.background.beforeUnloadChunk = this.public.beforeUnloadChunk;
 
 	this.effectsCanvas = effectC;
 	this.effectsCanvasCtx = effectC.getContext("2d");

@@ -16,9 +16,12 @@ function TiledCanvas (canvas, settings) {
     this.lastClear = Date.now();
 }
 
+TiledCanvas.prototype.MIN_INACTIVE_UNLOAD_TIME = 10 * 1000;
+
 TiledCanvas.prototype.defaultSettings = {
-    chunkSize: 1024,
-    fadeTime: 500
+    chunkSize: 256,                      // The size of the chunks in pixels
+    fadeTime: 500,                       // Fade time for the loading animation
+    maxLoadedChunks: 100                 // We'll try never loading more than this amount of chunks if possible
 };
 
 TiledCanvas.prototype.cloneObject = function (obj) {
@@ -66,7 +69,7 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
         this.ctx.restore();
     }
-
+	
     var startChunkX = Math.floor(this.leftTopX / this.settings.chunkSize),
         endChunkX   = Math.ceil((this.leftTopX + this.canvas.width / this.zoom) / this.settings.chunkSize),
         startChunkY = Math.floor(this.leftTopY / this.settings.chunkSize),
@@ -79,38 +82,11 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
     }
 };
 
-TiledCanvas.prototype.drawToCanvas = function drawToCanvas (canvas, from, to) {
-    var minX = Math.min(from[0], to[0]),
-        maxX = Math.max(from[0], to[0]),
-        minY = Math.min(from[1], to[1]),
-        maxY = Math.max(from[1], to[1]);
-
-    var width = maxX - minX,
-        height = maxY - minY;
-
-    var startChunkX = Math.floor(minX / this.settings.chunkSize),
-        endChunkX   = Math.ceil((minX + width) / this.settings.chunkSize),
-        startChunkY = Math.floor(minY / this.settings.chunkSize),
-        endChunkY   = Math.ceil((maxY + height) / this.settings.chunkSize);
-
-    var ctx = canvas.getContext("2d");
-    
-    for (var chunkX = startChunkX; chunkX < endChunkX; chunkX++) {
-        for (var chunkY = startChunkY; chunkY < endChunkY; chunkY++) {
-            if (this.chunks[chunkX] && this.chunks[chunkX][chunkY] && this.chunks[chunkX][chunkY] !== "empty") {
-                ctx.drawImage(
-                    this.chunks[chunkX][chunkY].canvas,
-                    chunkX * this.settings.chunkSize - minX,
-                    chunkY * this.settings.chunkSize - minY
-                );
-            }
-        }
-    }
-};
-
 TiledCanvas.prototype.drawChunk = function drawChunk (chunkX, chunkY) {
     if (this.chunks[chunkX] && this.chunks[chunkX][chunkY]) {
         if (this.chunks[chunkX][chunkY] == "empty") return;
+	
+	this.chunks[chunkX][chunkY].lastDrawn = Date.now();
 
         this.ctx.drawImage(this.chunks[chunkX][chunkY].canvas, ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
 
@@ -210,6 +186,48 @@ TiledCanvas.prototype.requestChunk = function requestChunk (chunkX, chunkY, call
             this.setUserChunk(chunkX, chunkY, image);
         }.bind(this));
     }
+
+    this.garbageCollect();
+};
+
+// This function can be overridden to make certain chunks not unload
+TiledCanvas.prototype.beforeUnloadChunk = function beforeUnloadChunk () { return true; }
+
+/*
+	Tries to remove as many chunks as possible that have not been used for more than MIN_INACTIVE_UNLOAD_TIME
+	Chunks that have been drawn on will never be removed
+	Only removes chunk if we are over the limit
+*/
+TiledCanvas.prototype.garbageCollect = function garbageCollect () {
+	if (this.chunkCount() > this.settings.maxLoadedChunks) {
+		for (var x in this.chunks) {
+			for (var y in this.chunks[x]) {
+				if (this.canBeUnloaded(x, y) && this.beforeUnloadChunk(x, y)) {
+					delete this.chunks[x][y];
+				}
+			}
+		}
+	}
+};
+
+/*
+	Returns the amount of loaded, non-empty chunks
+*/
+TiledCanvas.prototype.chunkCount = function chunkCount () {
+	var count = 0;
+	
+	for (var x in this.chunks)
+		for (var y in this.chunks[x])
+			if (this.chunks[x][y] != "empty" && this.chunks[x][y])
+				count++;
+	
+	return count;
+};
+
+TiledCanvas.prototype.canBeUnloaded = function canBeUnloaded (cx, cy) {
+	return this.chunks[cx][cy] != "empty" &&
+	       this.chunks[cx][cy] &&
+	       Date.now() - this.chunks[cx][cy].lastDrawn > this.MIN_INACTIVE_UNLOAD_TIME
 };
 
 TiledCanvas.prototype.setUserChunk = function setUserChunk (chunkX, chunkY, image) {
@@ -287,6 +305,7 @@ TiledCanvas.prototype.executeChunk = function executeChunk (chunkX, chunkY, queu
 
 TiledCanvas.prototype.executeQueueOnChunk = function executeQueueOnChunk (ctx, args) {
     ctx[args[0]].apply(ctx, Array.prototype.slice.call(args, 1));
+    ctx.hasBeenDrawnOn = true;
 };
 
 TiledCanvas.prototype.drawingRegion = function (startX, startY, endX, endY, border) {
