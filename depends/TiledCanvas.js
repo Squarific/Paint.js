@@ -128,8 +128,8 @@ TiledCanvas.prototype.drawToCanvas = function drawToCanvas (canvas, from, to) {
 	    minY = Math.min(from[1], to[1]),
 	    maxY = Math.max(from[1], to[1]);
 
-	var width = maxX minX,
-	    height = maxY minY;	
+	var width = maxX - minX,
+	    height = maxY - minY;	
 
 	var startChunkX = Math.floor(minX / this.settings.chunkSize),
 	    endChunkX   = Math.ceil((minX + width) / this.settings.chunkSize),
@@ -143,8 +143,8 @@ TiledCanvas.prototype.drawToCanvas = function drawToCanvas (canvas, from, to) {
 			if (this.chunks[chunkX] && this.chunks[chunkX][chunkY] && this.chunks[chunkX][chunkY] !== "empty") {
 				ctx.drawImage(
 					this.chunks[chunkX][chunkY].canvas,
-					chunkX * this.settings.chunkSize minX,
-					chunkY * this.settings.chunkSize minY
+					chunkX * this.settings.chunkSize - minX,
+					chunkY * this.settings.chunkSize - minY
 				);
 			}
 		}
