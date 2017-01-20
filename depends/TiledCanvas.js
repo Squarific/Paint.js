@@ -193,8 +193,8 @@ TiledCanvas.prototype.clearAll = function clearAll () {
 // Callbacks are guarenteed to run in the order requestChunk is called in
 TiledCanvas.prototype.requestChunk = function requestChunk (chunkX, chunkY, callback) {
     if (this.chunks[chunkX] && this.chunks[chunkX][chunkY]) {
-        callback();
-	return;
+        if (callback) callback();
+		return;
     }
     
     // Request a chunk and redraw once we got it
