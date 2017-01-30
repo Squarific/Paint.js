@@ -487,11 +487,16 @@ Paint.prototype.redrawFrames = function redrawFrames () {
 };
 
 Paint.prototype._redrawFrames = function _redrawFrames () {
-	this.framesContext.clearRect(0, 0, this.framesContext.canvas.width, this.framesContext.canvas.height);
+	if (this._framesHaveBeenDrawn) {
+		this.framesContext.clearRect(0, 0, this.framesContext.canvas.width, this.framesContext.canvas.height);
+		this._framesHaveBeenDrawn = false;
+	}
+
 	delete this.redrawFramesTimeout;
 	
 	for (var k = 0; k < this.frames.length; k++) {
 		this.drawFrame(this.frames[k], this.framesContext);
+		this._framesHaveBeenDrawn = true;
 	}
 };
 
