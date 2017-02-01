@@ -17,3 +17,10 @@
 	position:relative;
 	z-index:100;
 }
+
+.control-integer-input {
+	width: inherit !important;
+}
+.control-integer {
+	width: inherit !important;
+}
