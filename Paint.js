@@ -1002,6 +1002,7 @@ Paint.prototype.createControlArray = function createControlArray () {
 		max: this.defaultSettings.maxSize,
 		value: 5,
 		title: "Change the size of the tool",
+		classAppend: "msettings_range ",
 		action: this.changeToolSize.bind(this),
 		data: {
 			intro: "This changes your brush, line and text size."
