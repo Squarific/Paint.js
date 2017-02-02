@@ -52,3 +52,85 @@ input.paint-texttool {
 	background: white;
 	padding: .3em;
 }
+
+.control-integer-input {
+	-webkit-appearance: none;
+	margin: 0px;
+}
+
+.control-integer-input:focus {
+  outline: none; 
+}
+
+.control-integer-input::-ms-track {
+  cursor: pointer;
+  background: transparent;
+  border-color: transparent;
+  color: transparent;
+}
+
+.control-integer-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 10px;
+  width: 10px;
+  border-radius: 0px;
+  background: #999999;
+  cursor: pointer;
+  margin-top: 0px;
+}
+
+.control-integer-input::-moz-range-thumb {
+  height: 10px;
+  width: 10px;
+  border: none;
+  border-radius: 0px;
+  background: #999999;
+  cursor: pointer;
+}
+
+.control-integer-input::-ms-thumb {
+  height: 10px;
+  width: 10px;
+  border-radius: 0px;
+  background: #999999;
+  cursor: pointer;
+}
+
+.control-integer-input::-webkit-slider-runnable-track {
+  height: 10px;
+  cursor: pointer;
+  background: #cccccc;
+  border-radius: 0px;
+}
+
+.control-integer-input:focus::-webkit-slider-runnable-track {
+  background: #cccccc;
+}
+
+.control-integer-input::-moz-range-track {
+  height: 12px;
+  cursor: pointer;
+  background: #cccccc;
+  border-radius: 0px;
+}
+
+.control-integer-input::-ms-track {
+  height: 10px;
+  cursor: pointer;
+  background: transparent;
+  color: transparent;
+}
+.control-integer-input::-ms-fill-lower {
+  background: #cccccc;
+  border-radius: 0px;
+}
+.control-integer-input:focus::-ms-fill-lower {
+  background: #cccccc;
+}
+.control-integer-input::-ms-fill-upper {
+  background: #cccccc;
+  border-radius: 0px;
+}
+.control-integer-input:focus::-ms-fill-upper {
+  background: #cccccc;
+}
