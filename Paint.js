@@ -893,9 +893,10 @@ Paint.prototype.changeToolSize = function changeToolSize (size, setinput) {
 	this.current_size = parseInt(size);
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 
-	if (setinput)
+	if (setinput) {
 		this.controls.byName["tool-size"].input.value = size;
-
+		this.controls.byName["tool-size"].integerOutput.textContent = size;
+	}
 	if (this.lastMovePoint) {
 		var context = this.effectsCanvasCtx;
 		context.beginPath();
