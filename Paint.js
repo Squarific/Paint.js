@@ -589,6 +589,9 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 		if (x < minX) minX = x;
 		if (x > maxX) maxX = x;
 	}
+	if (path.color.type == "radialgradient") {
+		console.log("r")
+	}
 
 	if (path.color.type == "gradient") {
 		var lastX = path.points[path.points.length - 1][0];
@@ -939,6 +942,13 @@ Paint.prototype.createControlArray = function createControlArray () {
 		image: "images/icons/brush.png",
 		title: "Change tool to brush",
 		value: "brush",
+		action: this.changeTool.bind(this)
+	}, {
+		name: "dynamicbrush",
+		type: "button",
+		image: "images/icons/dynamicbrush.png",
+		title: "Change tool to dynamic brush",
+		value: "dynamicbrush",
 		action: this.changeTool.bind(this)
 	}, {
 		name: "text",
@@ -1393,6 +1403,97 @@ Paint.prototype.tools = {
 			context.fillStyle = paint.current_color.toRgbString();
 			context.fill();			
 		}
+	},
+	dynamicbrush: function dynamicbrush (paint, event, type) {
+
+		// Get the coordinates relative to the canvas
+		var distanceBetween = function distanceBetween(point1, point2) {
+			return Math.sqrt(
+			Math.pow(point2.x - point1.x, 2) +
+			Math.pow(point2.y - point1.y, 2)
+			);
+		};
+		var angleBetween = function angleBetween(point1, point2) {
+			return Math.atan2( point2.x - point1.x, point2.y - point1.y );
+		};
+		var color = '10,60,90';
+		var fluid = 50.0 / 111.1 + 0.1;
+		var hardness = 50.0 / 105.3;
+		var size = paint.current_size;
+		var spacing = (size/5)+1;
+		var currentPoint = { x: event.clientX, y: event.clientY };
+		
+		paint.lastMovePoint = paint.lastMovePoint || [0, 0];
+		var lastPoint = { x: paint.lastMovePoint[0], y: paint.lastMovePoint[1] };
+		var dist = distanceBetween(lastPoint, currentPoint);
+		var angle = angleBetween(lastPoint, currentPoint);
+		paint.current_color.type = "radialgradient";
+		
+		
+		var targetCoords = paint.getCoords(event);
+		var scaledCoords = paint.scaledCoords(targetCoords, event);
+		
+		if (event.type == "mouseup" || event.type == "touchend" || event.type == "mouseleave") {
+			paint.brushing = false;
+			paint.current_color.type = "";
+		}
+		
+		if (event.type == "mousedown" || event.type == "touchstart") {
+			lastPoint = currentPoint;
+			paint.brushing = true;
+			paint.addUserPath();
+		}
+		
+		if (event.type == "mousemove" || event.type == "touchmove") {
+			
+			// Clear the previous mouse dot
+			paint.effectsCanvasCtx.clearRect(paint.lastMovePoint[0] - paint.current_size * paint.local.zoom * 2, paint.lastMovePoint[1] - paint.current_size * paint.local.zoom * 2, paint.current_size * paint.local.zoom * 4, paint.current_size * paint.local.zoom * 4);
+
+			// Draw the current mouse position
+			var context = paint.effectsCanvasCtx;
+			
+			context.beginPath();
+			context.arc(scaledCoords[0], scaledCoords[1], (paint.current_size * paint.local.zoom), 0, 2 * Math.PI, true);
+			
+			var radgrad = context.createRadialGradient(currentPoint.x,currentPoint.y,size*hardness,currentPoint.x,currentPoint.y,size);
+		
+			radgrad.addColorStop(0, 'rgba(' + color + ',' + fluid.toString() + ')');
+			radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (fluid/2).toString() + ')');
+			radgrad.addColorStop(1, 'rgba(' + color + ',0)');
+			context.fillStyle = radgrad;
+			
+
+			context.fill();
+			
+			// Save the last move point for efficient clearing
+			paint.lastMovePoint[0] = scaledCoords[0];
+			paint.lastMovePoint[1] = scaledCoords[1];
+			
+			if(paint.brushing ){
+				
+				paint.addUserPathPoint([Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
+			                            Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom))]);
+			}
+				/*
+				for (var i = 0; i < dist; i+=spacing) {
+					x = lastPoint.x + (Math.sin(angle) * i);
+					y = lastPoint.y + (Math.cos(angle) * i);
+					
+					var radgrad = context.createRadialGradient(x,y,size*hardness,x,y,size);
+					
+					radgrad.addColorStop(0, 'rgba(' + color + ',' + fluid.toString() + ')');
+					radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (fluid/2).toString() + ')');
+					radgrad.addColorStop(1, 'rgba(' + color + ',0)');
+					
+					context.fillStyle = radgrad;
+					context.fillRect(x-size, y-size, size*2, size*2);
+				}
+				*/
+			}
+			
+			
+			lastPoint = { x: paint.lastMovePoint[0], y: paint.lastMovePoint[1] };
+		
 	},
 	brush: function brush (paint, event, type) {
 		if (event == "remove") {
