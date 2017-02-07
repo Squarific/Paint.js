@@ -560,17 +560,19 @@ Paint.prototype.drawPathTiledCanvas = function drawPathTiledCanvas (path, ctx, t
 	if (tiledCanvas == this.public || tiledCanvas == this.background)
 		this.redrawFrames();
 };
-Paint.prototype.distanceBetween = function distanceBetween(point1, point2) {
-			return Math.sqrt(
-			Math.pow(point2.x - point1.x, 2) +
-			Math.pow(point2.y - point1.y, 2)
-			);
-		};
-Paint.prototype.angleBetween = function angleBetween(point1, point2) {
-			return Math.atan2( point2.x - point1.x, point2.y - point1.y );
-		};
 
-Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
+Paint.prototype.distanceBetween = function distanceBetween (point1, point2) {
+	return Math.sqrt(
+		Math.pow(point2.x - point1.x, 2) +
+		Math.pow(point2.y - point1.y, 2)
+	);
+};
+
+Paint.prototype.angleBetween = function angleBetween (point1, point2) {
+	return Math.atan2( point2.x - point1.x, point2.y - point1.y );
+};
+
+Paint.prototype.drawPathDynamic = function drawPathDynamic (path, ctx, tiledCanvas) {
 	var ctx = ctx || this.pathContext;
 	if (!path.points || !path.points[0]) return;
 
@@ -578,19 +580,12 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 		this.drawPathTiledCanvas(path, ctx, tiledCanvas);
 		return;
 	}
-	//var distanceBetween, angleBetween, color, fluid, fluid, hardness, size, spacing, currentPoint, lastX, lastY,lastPoint;
-	//if (path.color.type == "radialgradient"){
+	var color = Math.trunc(path.color._r).toString() + "," + Math.trunc(path.color._g).toString() + "," + Math.trunc(path.color._b).toString();//'10,60,90';
 		
-		var color = Math.trunc(path.color._r).toString() + "," + Math.trunc(path.color._g).toString() + "," + Math.trunc(path.color._b).toString();//'10,60,90';
-		
-		var fluid = 50.0 / 111.1 + 0.1;
-		var hardness = 50.0 / 105.3;
-		var size = path.size;
-		var spacing = (size/5)+1;
-		
-		
-		
-	//}
+	var fluid = 50.0 / 111.1 + 0.1;
+	var hardness = 50.0 / 105.3;
+	var size = path.size;
+	var spacing = (size/5)+1;
 
 	// Start on the first point
 	ctx.beginPath();
@@ -608,40 +603,72 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 	for (var pointId = 1; pointId < path.points.length; pointId++) {
 		var x = path.points[pointId][0] - this.public.leftTopX,
 		    y = path.points[pointId][1] - this.public.leftTopY;
-		if(path.gradient == "radialgradient"){
-			var lastX = path.points[(pointId - 1 > 0) ? pointId - 1 : 1][0] - this.public.leftTopX ;
-			var lastY = path.points[(pointId - 1 > 0) ? pointId - 1 : 1 ][1] - this.public.leftTopY;
-			var lastPoint = { x: lastX, y: lastY };
-			var currentPoint = { x: x, y: y };
-			var dist = this.distanceBetween(lastPoint, currentPoint);
-			var angle = this.angleBetween(lastPoint, currentPoint);
-			//console.log(dist,spacing,angle,x,y, lastPoint)
-			for (var i = 0; i < dist; i+=spacing) {
-				x = lastPoint.x + (Math.sin(angle) * i);
-				y = lastPoint.y + (Math.cos(angle) * i);
-				
-				var radgrad = ctx.createRadialGradient(x,y,size*hardness,x,y,size);
-				
-				radgrad.addColorStop(0, 'rgba(' + color + ',' + fluid.toString() + ')');
-				radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (fluid/2).toString() + ')');
-				radgrad.addColorStop(1, 'rgba(' + color + ',0)');
-				
-				ctx.fillStyle = radgrad;
-				ctx.fillRect(x-size, y-size, size*2, size*2);
-			}
-			lastPoint.x = x;
-			lastPoint.y = y;
+		
+		var lastX = path.points[(pointId - 1 > 0) ? pointId - 1 : 1][0] - this.public.leftTopX ;
+		var lastY = path.points[(pointId - 1 > 0) ? pointId - 1 : 1 ][1] - this.public.leftTopY;
+		var lastPoint = { x: lastX, y: lastY };
+		var currentPoint = { x: x, y: y };
+		var dist = this.distanceBetween(lastPoint, currentPoint);
+		var angle = this.angleBetween(lastPoint, currentPoint);
+		//console.log(dist,spacing,angle,x,y, lastPoint)
+		for (var i = 0; i < dist; i+=spacing) {
+			x = lastPoint.x + (Math.sin(angle) * i);
+			y = lastPoint.y + (Math.cos(angle) * i);
+			
+			var radgrad = ctx.createRadialGradient(x,y,size*hardness,x,y,size);
+			
+			radgrad.addColorStop(0, 'rgba(' + color + ',' + fluid.toString() + ')');
+			radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (fluid/2).toString() + ')');
+			radgrad.addColorStop(1, 'rgba(' + color + ',0)');
+			
+			ctx.fillStyle = radgrad;
+			ctx.fillRect(x-size, y-size, size*2, size*2);
 		}
-		else
-			ctx.lineTo(x * this.public.zoom, y * this.public.zoom + this.FIX_CANVAS_PIXEL_SIZE);
+		lastPoint.x = x;
+		lastPoint.y = y;
 		
 		if (x < minX) minX = x;
 		if (x > maxX) maxX = x;
 	}
-	if (path.gradient == "radialgradient") {
-		//console.log("r",path.color.type)
+
+	ctx.lineWidth = path.size * this.public.zoom;
+
+	ctx.lineJoin = "round";
+	ctx.lineCap = "round";
+
+	ctx.stroke();
+};
+
+Paint.prototype.drawPathBasic = function drawPathDynamic (path, ctx, tiledCanvas) {
+	var ctx = ctx || this.pathContext;
+	if (!path.points || !path.points[0]) return;
+
+	if (tiledCanvas) {
+		this.drawPathTiledCanvas(path, ctx, tiledCanvas);
+		return;
 	}
-	else if (path.color.type == "gradient") {
+
+	// Start on the first point
+	ctx.beginPath();
+	var x = path.points[0][0] - this.public.leftTopX,
+	    y = path.points[0][1] - this.public.leftTopY;
+	ctx.moveTo(x * this.public.zoom, y * this.public.zoom + this.FIX_CANVAS_PIXEL_SIZE);
+
+	var minX = Infinity;
+	var minY = Infinity;
+	var maxX = -Infinity;
+	var maxY = -Infinity;
+
+	// Connect a line between all points
+	for (var pointId = 1; pointId < path.points.length; pointId++) {
+		var x = path.points[pointId][0] - this.public.leftTopX,
+		    y = path.points[pointId][1] - this.public.leftTopY;
+		ctx.lineTo(x * this.public.zoom, y * this.public.zoom + this.FIX_CANVAS_PIXEL_SIZE);
+		if (x < minX) minX = x;
+		if (x > maxX) maxX = x;
+	}
+
+	if (path.color.type == "gradient") {
 		var lastX = path.points[path.points.length - 1][0];
 		var lastY = path.points[path.points.length - 1][1];
 
@@ -665,6 +692,15 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 
 	ctx.stroke();
 };
+
+Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
+	if(path.gradient === "radialgradient")
+		this.drawPathDynamic(path, ctx, tiledCanvas);
+	else
+		this.drawPathBasic(path, ctx, tiledCanvas);
+};
+
+
 
 Paint.prototype.redrawLocals = function redrawLocals (noclear) {
 	// Force the redrawing of locals in this frame
@@ -1522,29 +1558,13 @@ Paint.prototype.tools = {
 			paint.lastMovePoint[1] = scaledCoords[1];
 			
 			if(paint.brushing ){
-				
 				paint.addUserPathPoint([Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
 			                            Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom))]);
 			}
-				/*
-				for (var i = 0; i < dist; i+=spacing) {
-					x = lastPoint.x + (Math.sin(angle) * i);
-					y = lastPoint.y + (Math.cos(angle) * i);
-					
-					var radgrad = context.createRadialGradient(x,y,size*hardness,x,y,size);
-					
-					radgrad.addColorStop(0, 'rgba(' + color + ',' + fluid.toString() + ')');
-					radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (fluid/2).toString() + ')');
-					radgrad.addColorStop(1, 'rgba(' + color + ',0)');
-					
-					context.fillStyle = radgrad;
-					context.fillRect(x-size, y-size, size*2, size*2);
-				}
-				*/
-			}
+		}
 			
 			
-			lastPoint = { x: paint.lastMovePoint[0], y: paint.lastMovePoint[1] };
+		lastPoint = { x: paint.lastMovePoint[0], y: paint.lastMovePoint[1] };
 		
 	},
 	brush: function brush (paint, event, type) {
