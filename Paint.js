@@ -49,6 +49,8 @@ function Paint (container, settings) {
 
 Paint.prototype.MAX_RANDOM_COORDS = 1048576;
 Paint.prototype.FIX_CANVAS_PIXEL_SIZE = 0.5;
+Paint.prototype.FLUID = 50.0 / 111.1 + 0.1;
+Paint.prototype.HARDNESS = 50.0 / 105.3;
 
 Paint.prototype.defaultSettings = {
 	maxSize: 100,
@@ -580,11 +582,25 @@ Paint.prototype.drawPathDynamic = function drawPathDynamic (path, ctx, tiledCanv
 		this.drawPathTiledCanvas(path, ctx, tiledCanvas);
 		return;
 	}
-	var color = Math.trunc(path.color._r).toString() + "," + Math.trunc(path.color._g).toString() + "," + Math.trunc(path.color._b).toString();//'10,60,90';
+	var color = tinycolor(path.color.toString());
+	var baseHsv = color.toHsv()
+	var stop1 = tinycolor({
+		h: baseHsv.h,
+		s: baseHsv.s,
+		v: baseHsv.v,
+		a: baseHsv.a / 2
+	});
+	var stop2 = tinycolor({
+		h: baseHsv.h,
+		s: baseHsv.s,
+		v: baseHsv.v,
+		a: 0
+	});
+
+
+	//var color = Math.trunc(path.color._r).toString() + "," + Math.trunc(path.color._g).toString() + "," + Math.trunc(path.color._b).toString();//'10,60,90';
 		
-	var fluid = 50.0 / 111.1 + 0.1;
-	var hardness = 50.0 / 105.3;
-	var size = path.size;
+	var size = path.size * this.public.zoom;
 	var spacing = (size/5)+1;
 
 	// Start on the first point
@@ -599,6 +615,7 @@ Paint.prototype.drawPathDynamic = function drawPathDynamic (path, ctx, tiledCanv
 	var maxX = -Infinity;
 	var maxY = -Infinity;
 
+
 	// Connect a line between all points
 	for (var pointId = 1; pointId < path.points.length; pointId++) {
 		var x = path.points[pointId][0] - this.public.leftTopX,
@@ -610,19 +627,22 @@ Paint.prototype.drawPathDynamic = function drawPathDynamic (path, ctx, tiledCanv
 		var currentPoint = { x: x, y: y };
 		var dist = this.distanceBetween(lastPoint, currentPoint);
 		var angle = this.angleBetween(lastPoint, currentPoint);
-		//console.log(dist,spacing,angle,x,y, lastPoint)
+
 		for (var i = 0; i < dist; i+=spacing) {
 			x = lastPoint.x + (Math.sin(angle) * i);
 			y = lastPoint.y + (Math.cos(angle) * i);
 			
-			var radgrad = ctx.createRadialGradient(x,y,size*hardness,x,y,size);
+			var radgrad = ctx.createRadialGradient(x* this.public.zoom, y* this.public.zoom, size * paint.HARDNESS, x* this.public.zoom, y* this.public.zoom, size);
 			
-			radgrad.addColorStop(0, 'rgba(' + color + ',' + fluid.toString() + ')');
-			radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (fluid/2).toString() + ')');
-			radgrad.addColorStop(1, 'rgba(' + color + ',0)');
+			radgrad.addColorStop(0, color.toRgbString());
+			radgrad.addColorStop(0.5, stop1.toRgbString());
+			radgrad.addColorStop(1, stop2.toRgbString());
+			//radgrad.addColorStop(0, 'rgba(' + color + ',' + paint.FLUID.toString() + ')');
+			//radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (paint.FLUID/2).toString() + ')');
+			//radgrad.addColorStop(1, 'rgba(' + color + ',0)');
 			
 			ctx.fillStyle = radgrad;
-			ctx.fillRect(x-size, y-size, size*2, size*2);
+			ctx.fillRect(x* this.public.zoom-size, y* this.public.zoom-size, size*2, size*2);
 		}
 		lastPoint.x = x;
 		lastPoint.y = y;
@@ -1502,26 +1522,20 @@ Paint.prototype.tools = {
 			return Math.atan2( point2.x - point1.x, point2.y - point1.y );
 		};
 		var color = '10,60,90';
-		var fluid = 50.0 / 111.1 + 0.1;
-		var hardness = 50.0 / 105.3;
 		var size = paint.current_size;
 		var spacing = (size/5)+1;
 		var currentPoint = { x: event.clientX, y: event.clientY };
 		
 		paint.lastMovePoint = paint.lastMovePoint || [0, 0];
 		var lastPoint = { x: paint.lastMovePoint[0], y: paint.lastMovePoint[1] };
-		var dist = distanceBetween(lastPoint, currentPoint);
-		var angle = angleBetween(lastPoint, currentPoint);
-		
-		
+		var dist = 0;
+		var angle = 0;
 		
 		var targetCoords = paint.getCoords(event);
 		var scaledCoords = paint.scaledCoords(targetCoords, event);
 		
 		if (event.type == "mouseup" || event.type == "touchend" || event.type == "mouseleave") {
 			paint.brushing = false;
-			//paint.current_color.type = "";
-			console.log('unset')
 			paint.endUserPath();
 		}
 		
@@ -1543,10 +1557,10 @@ Paint.prototype.tools = {
 			context.beginPath();
 			context.arc(scaledCoords[0], scaledCoords[1], (paint.current_size * paint.local.zoom), 0, 2 * Math.PI, true);
 			
-			var radgrad = context.createRadialGradient(currentPoint.x,currentPoint.y,size*hardness,currentPoint.x,currentPoint.y,size);
+			var radgrad = context.createRadialGradient(currentPoint.x, currentPoint.y, size * paint.HARDNESS, currentPoint.x, currentPoint.y, size);
 		
-			radgrad.addColorStop(0, 'rgba(' + color + ',' + fluid.toString() + ')');
-			radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (fluid/2).toString() + ')');
+			radgrad.addColorStop(0, 'rgba(' + color + ',' + paint.FLUID.toString() + ')');
+			radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (paint.FLUID/2).toString() + ')');
 			radgrad.addColorStop(1, 'rgba(' + color + ',0)');
 			context.fillStyle = radgrad;
 			
@@ -1591,7 +1605,6 @@ Paint.prototype.tools = {
 		if (event.type == "mouseup" || event.type == "touchend" || event.type == "mouseleave") {
 			paint.endUserPath();
 			paint.brushing = false;
-			//paint.current_color.type = "";
 		}
 
 		if (event.type == "mousemove" || event.type == "touchmove") {
