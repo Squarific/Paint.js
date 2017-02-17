@@ -49,6 +49,8 @@ function Paint (container, settings) {
 
 Paint.prototype.MAX_RANDOM_COORDS = 1048576;
 Paint.prototype.FIX_CANVAS_PIXEL_SIZE = 0.5;
+Paint.prototype.FLUID = 111.1 + 0.1;
+Paint.prototype.HARDNESS = 50.0 / 105.3;
 
 Paint.prototype.defaultSettings = {
 	maxSize: 100,
@@ -561,7 +563,101 @@ Paint.prototype.drawPathTiledCanvas = function drawPathTiledCanvas (path, ctx, t
 		this.redrawFrames();
 };
 
-Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
+Paint.prototype.distanceBetween = function distanceBetween (point1, point2) {
+	return Math.sqrt(
+		Math.pow(point2.x - point1.x, 2) +
+		Math.pow(point2.y - point1.y, 2)
+	);
+};
+
+Paint.prototype.angleBetween = function angleBetween (point1, point2) {
+	return Math.atan2( point2.x - point1.x, point2.y - point1.y );
+};
+
+Paint.prototype.drawPathDynamic = function drawPathDynamic (path, ctx, tiledCanvas) {
+	var ctx = ctx || this.pathContext;
+	if (!path.points || !path.points[0]) return;
+
+	if (tiledCanvas) {
+		this.drawPathTiledCanvas(path, ctx, tiledCanvas);
+		return;
+	}
+	var color = path.color.toRgbString();
+	var baseHsv = path.color.toHsv()
+	var stop1 = tinycolor({
+		h: baseHsv.h,
+		s: baseHsv.s,
+		v: baseHsv.v,
+		a: baseHsv.a / 2
+	}).toRgbString();
+	var stop2 = tinycolor({
+		h: baseHsv.h,
+		s: baseHsv.s,
+		v: baseHsv.v,
+		a: 0
+	}).toRgbString();
+
+
+	//var color = Math.trunc(path.color._r).toString() + "," + Math.trunc(path.color._g).toString() + "," + Math.trunc(path.color._b).toString();//'10,60,90';
+		
+	var size = path.size * this.public.zoom;
+	var spacing = 1;
+
+	// Start on the first point
+	ctx.beginPath();
+	var x = path.points[0][0] - this.public.leftTopX,
+	    y = path.points[0][1] - this.public.leftTopY;
+	var currentPoint = { x: x, y: y };
+	ctx.moveTo(x * this.public.zoom, y * this.public.zoom + this.FIX_CANVAS_PIXEL_SIZE);
+
+	var minX = Infinity;
+	var minY = Infinity;
+	var maxX = -Infinity;
+	var maxY = -Infinity;
+
+
+	// Connect a line between all points
+	for (var pointId = 1; pointId < path.points.length; pointId++) {
+		var x = path.points[pointId][0] - this.public.leftTopX,
+		    y = path.points[pointId][1] - this.public.leftTopY;
+		
+		var lastX = path.points[(pointId - 1 > 0) ? pointId - 1 : 1][0] - this.public.leftTopX ;
+		var lastY = path.points[(pointId - 1 > 0) ? pointId - 1 : 1 ][1] - this.public.leftTopY;
+		var lastPoint = { x: lastX, y: lastY };
+		var currentPoint = { x: x, y: y };
+		var dist = this.distanceBetween(lastPoint, currentPoint);
+		var angle = this.angleBetween(lastPoint, currentPoint);
+
+		for (var i = 0; i < dist; i+=spacing) {
+			x = lastPoint.x + (Math.sin(angle) * i);
+			y = lastPoint.y + (Math.cos(angle) * i);
+			
+			var radgrad = ctx.createRadialGradient(x* this.public.zoom, y* this.public.zoom, size * paint.HARDNESS, x* this.public.zoom, y* this.public.zoom, size);
+			
+			radgrad.addColorStop(0, color);
+			radgrad.addColorStop(0.5, stop1);
+			radgrad.addColorStop(1, stop2);
+
+			
+			ctx.fillStyle = radgrad;
+			ctx.fillRect(x* this.public.zoom-size, y* this.public.zoom-size, size*2, size*2);
+		}
+		lastPoint.x = x;
+		lastPoint.y = y;
+		
+		if (x < minX) minX = x;
+		if (x > maxX) maxX = x;
+	}
+
+	ctx.lineWidth = path.size * this.public.zoom;
+
+	ctx.lineJoin = "round";
+	ctx.lineCap = "round";
+
+	ctx.stroke();
+};
+
+Paint.prototype.drawPathBasic = function drawPathDynamic (path, ctx, tiledCanvas) {
 	var ctx = ctx || this.pathContext;
 	if (!path.points || !path.points[0]) return;
 
@@ -614,6 +710,15 @@ Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
 
 	ctx.stroke();
 };
+
+Paint.prototype.drawPath = function drawPath (path, ctx, tiledCanvas) {
+	if(path.gradient === "radialgradient")
+		this.drawPathDynamic(path, ctx, tiledCanvas);
+	else
+		this.drawPathBasic(path, ctx, tiledCanvas);
+};
+
+
 
 Paint.prototype.redrawLocals = function redrawLocals (noclear) {
 	// Force the redrawing of locals in this frame
@@ -748,11 +853,12 @@ Paint.prototype.addUserDrawing = function addUserDrawing (drawing) {
 };
 
 // Functions for the current user path (user path = path we are drawing)
-Paint.prototype.addUserPath = function addUserPath () {
+Paint.prototype.addUserPath = function addUserPath (gradient) {
 	this.localUserPaths.push({
 		type: "path",
 		color: this.current_color,
-		size: this.current_size
+		size: this.current_size,
+		gradient: gradient || "full"
 	});
 
 	this.dispatchEvent({
@@ -939,6 +1045,13 @@ Paint.prototype.createControlArray = function createControlArray () {
 		image: "images/icons/brush.png",
 		title: "Change tool to brush",
 		value: "brush",
+		action: this.changeTool.bind(this)
+	}, {
+		name: "dynamicbrush",
+		type: "button",
+		image: "images/icons/dynamicbrush.png",
+		title: "Change tool to dynamic brush",
+		value: "dynamicbrush",
 		action: this.changeTool.bind(this)
 	}, {
 		name: "text",
@@ -1394,6 +1507,78 @@ Paint.prototype.tools = {
 			context.fill();			
 		}
 	},
+	dynamicbrush: function dynamicbrush (paint, event, type) {
+		//console.log("dynamic brush")
+		// Get the coordinates relative to the canvas
+		var distanceBetween = function distanceBetween(point1, point2) {
+			return Math.sqrt(
+			Math.pow(point2.x - point1.x, 2) +
+			Math.pow(point2.y - point1.y, 2)
+			);
+		};
+		var angleBetween = function angleBetween(point1, point2) {
+			return Math.atan2( point2.x - point1.x, point2.y - point1.y );
+		};
+		var color = '10,60,90';
+		var size = paint.current_size;
+		var spacing = (size/5)+1;
+		var currentPoint = { x: event.clientX, y: event.clientY };
+		
+		paint.lastMovePoint = paint.lastMovePoint || [0, 0];
+		var lastPoint = { x: paint.lastMovePoint[0], y: paint.lastMovePoint[1] };
+		var dist = 0;
+		var angle = 0;
+		
+		var targetCoords = paint.getCoords(event);
+		var scaledCoords = paint.scaledCoords(targetCoords, event);
+		
+		if (event.type == "mouseup" || event.type == "touchend" || event.type == "mouseleave") {
+			paint.brushing = false;
+			paint.endUserPath();
+		}
+		
+		if (event.type == "mousedown" || event.type == "touchstart") {
+			lastPoint = currentPoint;
+			paint.brushing = true;
+			paint.current_color.type = "radialgradient";
+			paint.addUserPath("radialgradient");
+		}
+		
+		if (event.type == "mousemove" || event.type == "touchmove") {
+			
+			// Clear the previous mouse dot
+			paint.effectsCanvasCtx.clearRect(paint.lastMovePoint[0] - paint.current_size * paint.local.zoom * 2, paint.lastMovePoint[1] - paint.current_size * paint.local.zoom * 2, paint.current_size * paint.local.zoom * 4, paint.current_size * paint.local.zoom * 4);
+
+			// Draw the current mouse position
+			var context = paint.effectsCanvasCtx;
+			
+			context.beginPath();
+			context.arc(scaledCoords[0], scaledCoords[1], (paint.current_size * paint.local.zoom), 0, 2 * Math.PI, true);
+			
+			var radgrad = context.createRadialGradient(currentPoint.x, currentPoint.y, size * paint.HARDNESS, currentPoint.x, currentPoint.y, size);
+		
+			radgrad.addColorStop(0, 'rgba(' + color + ',' + paint.FLUID.toString() + ')');
+			radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (paint.FLUID/2).toString() + ')');
+			radgrad.addColorStop(1, 'rgba(' + color + ',0)');
+			context.fillStyle = radgrad;
+			
+
+			context.fill();
+			
+			// Save the last move point for efficient clearing
+			paint.lastMovePoint[0] = scaledCoords[0];
+			paint.lastMovePoint[1] = scaledCoords[1];
+			
+			if(paint.brushing ){
+				paint.addUserPathPoint([Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
+			                            Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom))]);
+			}
+		}
+			
+			
+		lastPoint = { x: paint.lastMovePoint[0], y: paint.lastMovePoint[1] };
+		
+	},
 	brush: function brush (paint, event, type) {
 		if (event == "remove") {
 			delete paint.lastMovePoint;
@@ -1401,7 +1586,6 @@ Paint.prototype.tools = {
 			delete paint.brushing;
 			return;
 		}
-
 		paint.lastMovePoint = paint.lastMovePoint || [0, 0];
 
 		// Get the coordinates relative to the canvas
@@ -1410,6 +1594,7 @@ Paint.prototype.tools = {
 
 		if (event.type == "mousedown" || event.type == "touchstart") {
 			paint.brushing = true;
+			paint.current_color.type = "brush";
 			paint.addUserPath();
 			paint.addUserPathPoint([Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
 			                        Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom))]);
