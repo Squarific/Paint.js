@@ -1,0 +1,106 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
+      }
+      canvas { 
+	    border: 1px solid #555;
+	  }
+    </style>
+  </head>
+  <body>
+  	<canvas id="c" width="600" height="300"></canvas>
+    <br>
+    <p id="brush">
+       Fluid
+    <input type="range"  id="fluid" value="50">
+       Hardness
+    <input type="range"  id="hardness" value="50">
+       Size
+    <input type="range"  id="size" value="19">
+    </p>
+<pre id="test"></pre>
+    <script>
+var el = document.getElementById('c');
+var ctx = el.getContext('2d');
+ctx.lineJoin = ctx.lineCap = 'round';
+var isDrawing = false;
+var lastPoint;
+  
+var color = '10,60,90';
+var fluid = 0.7;
+var size = 20;
+var hardness = 0.2;
+var spacing = (size/5)+1;
+if(fluid > 1) fluid = 1;
+if(fluid < 0.1) fluid = 0.1;
+if(hardness > 0.95) hardness = 0.95;
+if(hardness < 0) hardness = 0;
+updateBrush();
+function updateBrush(){
+	//minimum fluid is 0.1
+	//minimum hardness is 0
+	//maximum fluid is 1
+	//maximum hardness is 0.95
+	fluid = Number(document.getElementById("fluid").value) / 111.1 + 0.1;
+	hardness = Number(document.getElementById("hardness").value) / 105.3;
+	size = Number(document.getElementById("size").value) + 1;
+	spacing = (size/5)+1;
+	document.getElementById("test").innerHTML = 
+	"fluid: " + fluid.toFixed(3) + 
+	"    hardness: " + hardness.toFixed(3) + 
+	"    size: " + size;
+}
+function distanceBetween(point1, point2) {
+	return Math.sqrt(
+	Math.pow(point2.x - point1.x, 2) +
+	Math.pow(point2.y - point1.y, 2)
+	);
+}
+function angleBetween(point1, point2) {
+	return Math.atan2( point2.x - point1.x, point2.y - point1.y );
+}
+document.getElementById("brush").onmousemove = function() {
+	updateBrush();
+}
+    
+el.onmousedown = function(e) {
+	isDrawing = true;
+	lastPoint = { x: e.clientX, y: e.clientY };
+	//ctx.moveTo(e.clientX, e.clientY);
+};
+    
+el.onmousemove = function(e) {
+	if (!isDrawing) return;
+	
+	var currentPoint = { x: e.clientX, y: e.clientY };
+	var dist = distanceBetween(lastPoint, currentPoint);
+	var angle = angleBetween(lastPoint, currentPoint);
+	
+	if(dist < spacing) return;
+	for (var i = 0; i < dist; i+=spacing) {
+		
+		x = lastPoint.x + (Math.sin(angle) * i);
+		y = lastPoint.y + (Math.cos(angle) * i);
+		
+		var radgrad = ctx.createRadialGradient(x,y,size*hardness,x,y,size);
+		
+		radgrad.addColorStop(0, 'rgba(' + color + ',' + fluid.toString() + ')');
+		radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (fluid/2).toString() + ')');
+		radgrad.addColorStop(1, 'rgba(' + color + ',0)');
+		
+		ctx.fillStyle = radgrad;
+		ctx.fillRect(x-size, y-size, size*2, size*2);
+	}
+	lastPoint = currentPoint;
+};
+    
+el.onmouseup = function() {
+	isDrawing = false;
+};
+    </script>
+  </body>
+</html>      

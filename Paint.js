@@ -49,7 +49,7 @@ function Paint (container, settings) {
 
 Paint.prototype.MAX_RANDOM_COORDS = 1048576;
 Paint.prototype.FIX_CANVAS_PIXEL_SIZE = 0.5;
-Paint.prototype.FLUID = 50.0 / 111.1 + 0.1;
+Paint.prototype.FLUID = 111.1 + 0.1;
 Paint.prototype.HARDNESS = 50.0 / 105.3;
 
 Paint.prototype.defaultSettings = {
@@ -582,26 +582,26 @@ Paint.prototype.drawPathDynamic = function drawPathDynamic (path, ctx, tiledCanv
 		this.drawPathTiledCanvas(path, ctx, tiledCanvas);
 		return;
 	}
-	var color = tinycolor(path.color.toString());
-	var baseHsv = color.toHsv()
+	var color = path.color.toRgbString();
+	var baseHsv = path.color.toHsv()
 	var stop1 = tinycolor({
 		h: baseHsv.h,
 		s: baseHsv.s,
 		v: baseHsv.v,
 		a: baseHsv.a / 2
-	});
+	}).toRgbString();
 	var stop2 = tinycolor({
 		h: baseHsv.h,
 		s: baseHsv.s,
 		v: baseHsv.v,
 		a: 0
-	});
+	}).toRgbString();
 
 
 	//var color = Math.trunc(path.color._r).toString() + "," + Math.trunc(path.color._g).toString() + "," + Math.trunc(path.color._b).toString();//'10,60,90';
 		
 	var size = path.size * this.public.zoom;
-	var spacing = (size/5)+1;
+	var spacing = 1;
 
 	// Start on the first point
 	ctx.beginPath();
@@ -634,12 +634,10 @@ Paint.prototype.drawPathDynamic = function drawPathDynamic (path, ctx, tiledCanv
 			
 			var radgrad = ctx.createRadialGradient(x* this.public.zoom, y* this.public.zoom, size * paint.HARDNESS, x* this.public.zoom, y* this.public.zoom, size);
 			
-			radgrad.addColorStop(0, color.toRgbString());
-			radgrad.addColorStop(0.5, stop1.toRgbString());
-			radgrad.addColorStop(1, stop2.toRgbString());
-			//radgrad.addColorStop(0, 'rgba(' + color + ',' + paint.FLUID.toString() + ')');
-			//radgrad.addColorStop(0.5, 'rgba(' + color + ',' + (paint.FLUID/2).toString() + ')');
-			//radgrad.addColorStop(1, 'rgba(' + color + ',0)');
+			radgrad.addColorStop(0, color);
+			radgrad.addColorStop(0.5, stop1);
+			radgrad.addColorStop(1, stop2);
+
 			
 			ctx.fillStyle = radgrad;
 			ctx.fillRect(x* this.public.zoom-size, y* this.public.zoom-size, size*2, size*2);
