@@ -704,6 +704,23 @@ Paint.prototype.generateGrid = function generateGrid (leftTop, squares, sqwidth,
 	}
 };
 
+Paint.prototype.previewGrid = function previewGrid (leftTop, squares, sqwidth, sqheight, gutter) {
+	var context = this.effectsCanvasCtx;
+	context.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
+	var x = leftTop[0] - this.public.leftTopX,
+	    y = leftTop[1] - this.public.leftTopY;
+	context.setLineDash([]); // overwrite the selection tool line dash effect
+	for (var k = 0; k < squares; k++) {
+		var localLeftTop = [x + k * sqwidth + k * gutter, y];
+		context.beginPath();
+
+		context.rect(localLeftTop[0], localLeftTop[1], sqwidth, sqheight);
+		context.lineWidth = this.current_size;
+		context.strokeStyle = this.current_color.toRgbString();
+		context.stroke();
+	}
+};
+
 // Draw the given path on the public layer and remove it
 Paint.prototype.finalizePath = function finalizePath (id) {
 	if (!this.paths[id]) {
