@@ -107,9 +107,14 @@ Controls.prototype.constructors.integer = function createIntegerInput (control) 
 	if (control.data)
 		for (var datakey in control.data)
 			input.setAttribute("data-" + datakey, control.data[datakey]);
-
+	
+	var integerOutput = container.appendChild(document.createElement("div"));
+	integerOutput.className = "control-integer-output";
+	integerOutput.textContent = '0';
+	
 	input.addEventListener("input", function () {
-		control.action(input.value);
+		//integerOutput.textContent = input.value;
+		control.action(input.value, true);
 	});
 
 	// Create the minus button
@@ -119,7 +124,7 @@ Controls.prototype.constructors.integer = function createIntegerInput (control) 
 			var max = parseInt(input.max || Infinity);
 			var nextValue = parseInt(input.value) - 1;
 			input.value = Math.min(max, nextValue);
-			control.action(input.value);
+			control.action(input.value, true);
 		}
 	}).containerAppend);
 
@@ -133,12 +138,13 @@ Controls.prototype.constructors.integer = function createIntegerInput (control) 
 			var max = parseInt(input.max || Infinity);
 			var nextValue = parseInt(input.value) + 1;
 			input.value = Math.min(max, nextValue);
-			control.action(input.value);
+			control.action(input.value, true);
 		}
 	}).containerAppend);
 
 	return {
 		input: input,
+		integerOutput: integerOutput,
 		containerAppend: container
 	}
 };

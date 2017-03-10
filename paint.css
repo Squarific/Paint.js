@@ -53,6 +53,20 @@ input.paint-texttool {
 	padding: .3em;
 }
 
+.control-integer {
+	position: relative;
+}
+
+.control-integer-output {
+	display: inline-block;
+	position: absolute;
+	left: 42%;
+	width: 38px;
+	text-align: center;
+	color: #456762;
+	pointer-events: none;
+}
+
 .control-integer-input {
 	-webkit-appearance: none;
 	margin: 0px;
