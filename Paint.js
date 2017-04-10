@@ -1384,10 +1384,10 @@ Paint.prototype.tools = {
 
 			paint.addUserDrawing({
 				type: "line",
-				x: Math.round(paint.local.leftTopX + (paint.lastLinePoint[0] / paint.local.zoom) * this.PATH_PRECISION) / this.PATH_PRECISION,
-				y: Math.round(paint.local.leftTopY + (paint.lastLinePoint[1] / paint.local.zoom) * this.PATH_PRECISION) / this.PATH_PRECISION,
-				x1: Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom) * this.PATH_PRECISION) / this.PATH_PRECISION,
-				y1: Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom) * this.PATH_PRECISION) / this.PATH_PRECISION,
+				x: Math.round(paint.local.leftTopX + (paint.lastLinePoint[0] / paint.local.zoom) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
+				y: Math.round(paint.local.leftTopY + (paint.lastLinePoint[1] / paint.local.zoom) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
+				x1: Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
+				y1: Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
 				size: paint.current_size,
 				color: paint.current_color
 			});
@@ -1436,8 +1436,8 @@ Paint.prototype.tools = {
 		if (event.type == "mousedown" || event.type == "touchstart") {
 			paint.brushing = true;
 			paint.addUserPath();
-			paint.addUserPathPoint([Math.round((paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)) * this.PATH_PRECISION) / this.PATH_PRECISION,
-			                        Math.round((paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)) * this.PATH_PRECISION) / this.PATH_PRECISION]);
+			paint.addUserPathPoint([Math.round((paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
+			                        Math.round((paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION]);
 		}
 
 		if (event.type == "mouseup" || event.type == "touchend" || event.type == "mouseleave") {
@@ -1472,8 +1472,8 @@ Paint.prototype.tools = {
 
 			// If the last brush point is set we are currently drawing
 			if (paint.brushing) {
-				paint.addUserPathPoint([Math.round((paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)) * this.PATH_PRECISION) / this.PATH_PRECISION,
-			                            Math.round((paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)) * this.PATH_PRECISION) / this.PATH_PRECISION]);
+				paint.addUserPathPoint([Math.round((paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
+			                            Math.round((paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION]);
 			}
 		}
 	},
