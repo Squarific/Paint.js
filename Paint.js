@@ -707,15 +707,15 @@ Paint.prototype.generateGrid = function generateGrid (leftTop, squares, sqwidth,
 Paint.prototype.previewGrid = function previewGrid (leftTop, squares, sqwidth, sqheight, gutter) {
 	var context = this.effectsCanvasCtx;
 	context.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
-	var x = leftTop[0] - this.public.leftTopX,
-	    y = leftTop[1] - this.public.leftTopY;
+	var x = (leftTop[0] - this.public.leftTopX) * this.public.zoom,
+	    y = (leftTop[1] - this.public.leftTopY) * this.public.zoom;
 	context.setLineDash([]); // overwrite the selection tool line dash effect
 	for (var k = 0; k < squares; k++) {
-		var localLeftTop = [x + k * sqwidth + k * gutter, y];
+		var localLeftTop = [x + k * sqwidth * this.public.zoom + k * gutter * this.public.zoom, y];
 		context.beginPath();
 
-		context.rect(localLeftTop[0], localLeftTop[1], sqwidth, sqheight);
-		context.lineWidth = this.current_size;
+		context.rect(localLeftTop[0], localLeftTop[1], sqwidth * this.public.zoom, sqheight * this.public.zoom);
+		context.lineWidth = this.current_size * this.public.zoom;
 		context.strokeStyle = this.current_color.toRgbString();
 		context.stroke();
 	}
