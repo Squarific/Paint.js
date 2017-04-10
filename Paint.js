@@ -48,7 +48,9 @@ function Paint (container, settings) {
 }
 
 Paint.prototype.MAX_RANDOM_COORDS = 1048576;
-Paint.prototype.FIX_CANVAS_PIXEL_SIZE = 0.5;
+Paint.prototype.FIX_CANVAS_PIXEL_SIZE = 0;
+Paint.prototype.PATH_PRECISION = 1000;
+Paint.prototype.MIN_PATH_WIDTH = 1.001;
 
 Paint.prototype.defaultSettings = {
 	maxSize: 100,
@@ -905,14 +907,19 @@ Paint.prototype.changeToolSize = function changeToolSize (size, setinput) {
 	if (this.brushing) return;
 
 	if (size > this.settings.maxSize) size = this.settings.maxSize;
-	if (size < 1) size = 1;
+	if (size <= 1) {
+		size = this.MIN_PATH_WIDTH;
+		this.current_size = size;
+	}
+	else
+		this.current_size = parseInt(size);
 
 	this.current_size = parseInt(size);
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 
 	if (setinput) {
 		this.controls.byName["tool-size"].input.value = size;
-		this.controls.byName["tool-size"].integerOutput.textContent = size;
+		this.controls.byName["tool-size"].integerOutput.textContent = (size==this.MIN_PATH_WIDTH) ? '1' : size; // display 1 instead of min path size fraction
 	}
 	if (this.lastMovePoint) {
 		var context = this.effectsCanvasCtx;
@@ -1377,10 +1384,10 @@ Paint.prototype.tools = {
 
 			paint.addUserDrawing({
 				type: "line",
-				x: Math.round(paint.local.leftTopX + (paint.lastLinePoint[0] / paint.local.zoom)),
-				y: Math.round(paint.local.leftTopY + (paint.lastLinePoint[1] / paint.local.zoom)),
-				x1: Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
-				y1: Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)),
+				x: Math.round(paint.local.leftTopX + (paint.lastLinePoint[0] / paint.local.zoom) * this.PATH_PRECISION) / this.PATH_PRECISION,
+				y: Math.round(paint.local.leftTopY + (paint.lastLinePoint[1] / paint.local.zoom) * this.PATH_PRECISION) / this.PATH_PRECISION,
+				x1: Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom) * this.PATH_PRECISION) / this.PATH_PRECISION,
+				y1: Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom) * this.PATH_PRECISION) / this.PATH_PRECISION,
 				size: paint.current_size,
 				color: paint.current_color
 			});
@@ -1429,8 +1436,8 @@ Paint.prototype.tools = {
 		if (event.type == "mousedown" || event.type == "touchstart") {
 			paint.brushing = true;
 			paint.addUserPath();
-			paint.addUserPathPoint([Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
-			                        Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom))]);
+			paint.addUserPathPoint([Math.round((paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)) * this.PATH_PRECISION) / this.PATH_PRECISION,
+			                        Math.round((paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)) * this.PATH_PRECISION) / this.PATH_PRECISION]);
 		}
 
 		if (event.type == "mouseup" || event.type == "touchend" || event.type == "mouseleave") {
@@ -1465,8 +1472,8 @@ Paint.prototype.tools = {
 
 			// If the last brush point is set we are currently drawing
 			if (paint.brushing) {
-				paint.addUserPathPoint([Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
-			                            Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom))]);
+				paint.addUserPathPoint([Math.round((paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)) * this.PATH_PRECISION) / this.PATH_PRECISION,
+			                            Math.round((paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)) * this.PATH_PRECISION) / this.PATH_PRECISION]);
 			}
 		}
 	},
