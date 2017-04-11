@@ -8,11 +8,11 @@ LICENSE: MIT
 Demo
 ====
 
-##Pure paint.js:
+## Pure paint.js:
 
 http://squarific.github.io/Paint.js/demo.html
 
-##Used in another project:
+## Used in another project:
 
 http://www.anondraw.com
 
