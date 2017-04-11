@@ -907,12 +907,9 @@ Paint.prototype.changeToolSize = function changeToolSize (size, setinput) {
 	if (this.brushing) return;
 
 	if (size > this.settings.maxSize) size = this.settings.maxSize;
-	if (size <= 1) {
-		size = this.MIN_PATH_WIDTH;
-		this.current_size = size;
-	}
-	else
-		this.current_size = parseInt(size);
+	if (size <= 1) size = this.MIN_PATH_WIDTH;
+
+	this.current_size = parseInt(size);
 	
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 
