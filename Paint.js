@@ -329,7 +329,9 @@ Paint.prototype.resize = function resize () {
 		this.canvasArray[cKey].width = this.canvasArray[cKey].offsetWidth;
 		this.canvasArray[cKey].height = this.canvasArray[cKey].offsetHeight;
 	}
-
+	this.public.reinitializeImageSmoothing();
+	this.background.reinitializeImageSmoothing();
+	this.local.reinitializeImageSmoothing();
 	this.redrawAll();
 
 	for (var k = 0; k < this.boundingBoxList.length; k++) {
@@ -1066,29 +1068,22 @@ Paint.prototype.createControlArray = function createControlArray () {
 };
 
 Paint.prototype.zoom = function zoom (zoomFactor) {
-	var currentMiddleX = this.public.leftTopX + this.canvasArray[0].width / this.public.zoom / 2;
-	var currentMiddleY = this.public.leftTopY + this.canvasArray[0].height / this.public.zoom / 2;
-
-	var newX = currentMiddleX - this.canvasArray[0].width / (this.public.zoom * zoomFactor) / 2;
-	var newY = currentMiddleY - this.canvasArray[0].height / (this.public.zoom * zoomFactor) / 2;
-
-	this.public.relativeZoom(zoomFactor);
-	this.background.relativeZoom(zoomFactor);
-	this.local.relativeZoom(zoomFactor);
-
-	this.goto(newX, newY);
-
-	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
-	this.redrawPaths();
-	this.redrawFrames();
+	this.zoomAbsolute(this.public.zoom * zoomFactor);
 };
 
 Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
+	if((zoomFactor>0.98)&&(zoomFactor<1.02)) zoomFactor=1
+	
 	var currentMiddleX = this.public.leftTopX + this.canvasArray[0].width / this.public.zoom / 2;
 	var currentMiddleY = this.public.leftTopY + this.canvasArray[0].height / this.public.zoom / 2;
 
 	var newX = currentMiddleX - this.canvasArray[0].width / zoomFactor / 2;
 	var newY = currentMiddleY - this.canvasArray[0].height / zoomFactor / 2;
+	
+	if(zoomFactor==1){
+		newX=Math.round(newX)
+		newY=Math.round(newY)
+	}
 
 	this.public.absoluteZoom(zoomFactor);
 	this.background.absoluteZoom(zoomFactor);
