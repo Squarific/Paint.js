@@ -21,7 +21,9 @@ TiledCanvas.prototype.MIN_INACTIVE_UNLOAD_TIME = 10 * 1000;
 TiledCanvas.prototype.defaultSettings = {
     chunkSize: 1024,                      // The size of the chunks in pixels
     fadeTime: 500,                       // Fade time for the loading animation
-    maxLoadedChunks: 100                 // We'll try never loading more than this amount of chunks if possible
+    maxLoadedChunks: 100,                 // We'll try never loading more than this amount of chunks if possible
+	blurOnZoom: true,
+	zoomLevelToPixelate: 5
 };
 
 TiledCanvas.prototype.cloneObject = function (obj) {
@@ -158,13 +160,23 @@ TiledCanvas.prototype.goto = function goto (x, y) {
 };
 
 TiledCanvas.prototype.relativeZoom = function relativeZoom (zoom) {
-    this.zoom *= zoom;
-    this.redrawOnce();
+    this.absoluteZoom(this.zoom * zoom);
 };
 
 TiledCanvas.prototype.absoluteZoom = function absoluteZoom (zoom) {
     this.zoom = zoom;
+	
+	this.reinitializeImageSmoothing();
+	
     this.redrawOnce();
+};
+
+TiledCanvas.prototype.reinitializeImageSmoothing = function reinitializeImageSmoothing () {
+	var blurCanvas = this.settings.blurOnZoom || (this.zoom < this.settings.zoomLevelToPixelate);
+	this.ctx.mozImageSmoothingEnabled = blurCanvas;
+	this.ctx.webkitImageSmoothingEnabled = blurCanvas;
+	this.ctx.msImageSmoothingEnabled = blurCanvas;
+	this.ctx.imageSmoothingEnabled = blurCanvas;
 };
 
 TiledCanvas.prototype.execute = function execute () {

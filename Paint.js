@@ -48,7 +48,9 @@ function Paint (container, settings) {
 }
 
 Paint.prototype.MAX_RANDOM_COORDS = 1048576;
-Paint.prototype.FIX_CANVAS_PIXEL_SIZE = 0.5;
+Paint.prototype.FIX_CANVAS_PIXEL_SIZE = 0;
+Paint.prototype.PATH_PRECISION = 1000;
+Paint.prototype.MIN_PATH_WIDTH = 1.001;
 
 Paint.prototype.defaultSettings = {
 	maxSize: 100,
@@ -327,7 +329,9 @@ Paint.prototype.resize = function resize () {
 		this.canvasArray[cKey].width = this.canvasArray[cKey].offsetWidth;
 		this.canvasArray[cKey].height = this.canvasArray[cKey].offsetHeight;
 	}
-
+	this.public.reinitializeImageSmoothing();
+	this.background.reinitializeImageSmoothing();
+	this.local.reinitializeImageSmoothing();
 	this.redrawAll();
 
 	for (var k = 0; k < this.boundingBoxList.length; k++) {
@@ -704,6 +708,23 @@ Paint.prototype.generateGrid = function generateGrid (leftTop, squares, sqwidth,
 	}
 };
 
+Paint.prototype.previewGrid = function previewGrid (leftTop, squares, sqwidth, sqheight, gutter) {
+	var context = this.effectsCanvasCtx;
+	context.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
+	var x = (leftTop[0] - this.public.leftTopX) * this.public.zoom,
+	    y = (leftTop[1] - this.public.leftTopY) * this.public.zoom;
+	context.setLineDash([]); // overwrite the selection tool line dash effect
+	for (var k = 0; k < squares; k++) {
+		var localLeftTop = [x + k * sqwidth * this.public.zoom + k * gutter * this.public.zoom, y];
+		context.beginPath();
+
+		context.rect(localLeftTop[0], localLeftTop[1], sqwidth * this.public.zoom, sqheight * this.public.zoom);
+		context.lineWidth = this.current_size * this.public.zoom;
+		context.strokeStyle = this.current_color.toRgbString();
+		context.stroke();
+	}
+};
+
 // Draw the given path on the public layer and remove it
 Paint.prototype.finalizePath = function finalizePath (id) {
 	if (!this.paths[id]) {
@@ -888,14 +909,15 @@ Paint.prototype.changeToolSize = function changeToolSize (size, setinput) {
 	if (this.brushing) return;
 
 	if (size > this.settings.maxSize) size = this.settings.maxSize;
-	if (size < 1) size = 1;
+	if (size <= 1) size = this.MIN_PATH_WIDTH;
 
-	this.current_size = parseInt(size);
+	this.current_size = parseFloat(size);
+	
 	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
 
 	if (setinput) {
 		this.controls.byName["tool-size"].input.value = size;
-		this.controls.byName["tool-size"].integerOutput.textContent = size;
+		this.controls.byName["tool-size"].integerOutput.textContent = (size==this.MIN_PATH_WIDTH) ? '1' : size; // display 1 instead of min path size fraction
 	}
 	if (this.lastMovePoint) {
 		var context = this.effectsCanvasCtx;
@@ -1046,29 +1068,22 @@ Paint.prototype.createControlArray = function createControlArray () {
 };
 
 Paint.prototype.zoom = function zoom (zoomFactor) {
-	var currentMiddleX = this.public.leftTopX + this.canvasArray[0].width / this.public.zoom / 2;
-	var currentMiddleY = this.public.leftTopY + this.canvasArray[0].height / this.public.zoom / 2;
-
-	var newX = currentMiddleX - this.canvasArray[0].width / (this.public.zoom * zoomFactor) / 2;
-	var newY = currentMiddleY - this.canvasArray[0].height / (this.public.zoom * zoomFactor) / 2;
-
-	this.public.relativeZoom(zoomFactor);
-	this.background.relativeZoom(zoomFactor);
-	this.local.relativeZoom(zoomFactor);
-
-	this.goto(newX, newY);
-
-	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
-	this.redrawPaths();
-	this.redrawFrames();
+	this.zoomAbsolute(this.public.zoom * zoomFactor);
 };
 
 Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
+	if((zoomFactor>0.98)&&(zoomFactor<1.02)) zoomFactor=1
+	
 	var currentMiddleX = this.public.leftTopX + this.canvasArray[0].width / this.public.zoom / 2;
 	var currentMiddleY = this.public.leftTopY + this.canvasArray[0].height / this.public.zoom / 2;
 
 	var newX = currentMiddleX - this.canvasArray[0].width / zoomFactor / 2;
 	var newY = currentMiddleY - this.canvasArray[0].height / zoomFactor / 2;
+	
+	if(zoomFactor==1){
+		newX=Math.round(newX)
+		newY=Math.round(newY)
+	}
 
 	this.public.absoluteZoom(zoomFactor);
 	this.background.absoluteZoom(zoomFactor);
@@ -1360,10 +1375,10 @@ Paint.prototype.tools = {
 
 			paint.addUserDrawing({
 				type: "line",
-				x: Math.round(paint.local.leftTopX + (paint.lastLinePoint[0] / paint.local.zoom)),
-				y: Math.round(paint.local.leftTopY + (paint.lastLinePoint[1] / paint.local.zoom)),
-				x1: Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
-				y1: Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)),
+				x: Math.round((paint.local.leftTopX + (paint.lastLinePoint[0] / paint.local.zoom)) * paint.PATH_PRECISION)/ paint.PATH_PRECISION,
+				y: Math.round((paint.local.leftTopY + (paint.lastLinePoint[1] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
+				x1: Math.round((paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
+				y1: Math.round((paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
 				size: paint.current_size,
 				color: paint.current_color
 			});
@@ -1412,8 +1427,12 @@ Paint.prototype.tools = {
 		if (event.type == "mousedown" || event.type == "touchstart") {
 			paint.brushing = true;
 			paint.addUserPath();
-			paint.addUserPathPoint([Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
-			                        Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom))]);
+			paint.addUserPathPoint([Math.round((paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
+			                        Math.round((paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION]);
+
+			// Clear the previous mouse dot
+			paint.effectsCanvasCtx.clearRect(paint.lastMovePoint[0] - paint.current_size * paint.local.zoom * 2, paint.lastMovePoint[1] - paint.current_size * paint.local.zoom * 2, paint.current_size * paint.local.zoom * 4, paint.current_size * paint.local.zoom * 4);
+
 		}
 
 		if (event.type == "mouseup" || event.type == "touchend" || event.type == "mouseleave") {
@@ -1422,34 +1441,38 @@ Paint.prototype.tools = {
 		}
 
 		if (event.type == "mousemove" || event.type == "touchmove") {
-			// Clear the previous mouse dot
-			paint.effectsCanvasCtx.clearRect(paint.lastMovePoint[0] - paint.current_size * paint.local.zoom * 2, paint.lastMovePoint[1] - paint.current_size * paint.local.zoom * 2, paint.current_size * paint.local.zoom * 4, paint.current_size * paint.local.zoom * 4);
+			// If we are brushing we don't need to draw a preview
+			if (!this.brushing) {
+				// Clear the previous mouse dot
+				paint.effectsCanvasCtx.clearRect(paint.lastMovePoint[0] - paint.current_size * paint.local.zoom * 2, paint.lastMovePoint[1] - paint.current_size * paint.local.zoom * 2, paint.current_size * paint.local.zoom * 4, paint.current_size * paint.local.zoom * 4);
 
-			// Draw the current mouse position
-			var context = paint.effectsCanvasCtx;
-			context.beginPath();
-			context.arc(scaledCoords[0], scaledCoords[1], (paint.current_size * paint.local.zoom) / 2, 0, 2 * Math.PI, true);
+				// Draw the current mouse position
+				var context = paint.effectsCanvasCtx;
+				context.beginPath();
+				context.arc(scaledCoords[0], scaledCoords[1], (paint.current_size * paint.local.zoom) / 2, 0, 2 * Math.PI, true);
 
-			if (paint.current_color.type == "gradient") {
-				if (!paint.current_color[0]) {
-					context.fillStyle = "black";
+				if (paint.current_color.type == "gradient") {
+					if (!paint.current_color[0]) {
+						context.fillStyle = "black";
+					} else {
+						context.fillStyle = paint.current_color[0].color.toRgbString();	
+					}
 				} else {
-					context.fillStyle = paint.current_color[0].color.toRgbString();	
+					context.fillStyle = paint.current_color.toRgbString();
 				}
-			} else {
-				context.fillStyle = paint.current_color.toRgbString();
+
+				context.fill();
+				
+				// Save the last move point for efficient clearing
+				paint.lastMovePoint[0] = scaledCoords[0];
+				paint.lastMovePoint[1] = scaledCoords[1];
 			}
 
-			context.fill();
-
-			// Save the last move point for efficient clearing
-			paint.lastMovePoint[0] = scaledCoords[0];
-			paint.lastMovePoint[1] = scaledCoords[1];
 
 			// If the last brush point is set we are currently drawing
 			if (paint.brushing) {
-				paint.addUserPathPoint([Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)),
-			                            Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom))]);
+				paint.addUserPathPoint([Math.round((paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
+			                            Math.round((paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION]);
 			}
 		}
 	},
