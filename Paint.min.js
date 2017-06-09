@@ -204,7 +204,8 @@ Controls.prototype.constructors.color = function createColorInput (control) {
 				preferredFormat: "rgb",
 				showPalette: true,
 				maxSelectionSize: 32,
-				clickoutFiresChange: true,		
+				clickoutFiresChange: true,
+				localStorageKey: "anondraw.palette",
 				move: function (color) {
 					control.action(color);
 				}
