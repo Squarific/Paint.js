@@ -124,21 +124,32 @@ Paint.prototype.setRotation = function setRotation (value) {
 Paint.prototype.addCanvas = function addCanvas (container) {
 	// The background pngs
 	var backgroundC = container.appendChild(this.createCanvas("background"));
+	backgroundC.oncontextmenu = function() {
+		 return false;  
+	} 
 	
 	// The things that have been drawn and we already know the order of
 	// but have yet to be finalized
 	var publicC = container.appendChild(this.createCanvas("public"));
-	
+	publicC.oncontextmenu = function() {
+		 return false;  
+	} 
 	// This canvas is used to display parts of the background and public
 	// The use case is to display the previous frames in an animation
 	var frameC = container.appendChild(this.createCanvas("frames"));
-	
+	frameC.oncontextmenu = function() {
+		 return false;  
+	} 
 	// The things we drew but the server hasn't confirmed yet
 	var localC  = container.appendChild(this.createCanvas("local"));
-	
+	localC.oncontextmenu = function() {
+		 return false;  
+	} 
 	// Canvas for things like cursor that should always be at the top
 	var effectC = container.appendChild(this.createCanvas("effect"));
-
+	effectC.oncontextmenu = function() {
+		 return false;  
+	} 
 	var backgroundCtx = backgroundC.getContext("2d");
 	backgroundCtx.mozImageSmoothingEnabled = false;
 	backgroundCtx.webkitImageSmoothingEnabled = false;
@@ -864,6 +875,11 @@ Paint.prototype.exectool = function exectool (event) {
 		event.preventDefault();
 
 	if (typeof this.tools[this.current_tool] == "function") {
+		if (event.button === 2) { // right click
+			if (this.current_tool === "picker") {
+				console.log(event);
+			}
+		}
 		this.tools[this.current_tool](this, event);
 	}
 
@@ -1072,14 +1088,39 @@ Paint.prototype.zoom = function zoom (zoomFactor) {
 	this.zoomAbsolute(this.public.zoom * zoomFactor);
 };
 
-Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor, offsetX, offsetY) {
+Paint.prototype.zoomToPoint = function zoomToPoint(zoomFactor, pointX, pointY){
 	if((zoomFactor>0.98)&&(zoomFactor<1.02)) zoomFactor=1
-	offsetX = offsetX || 0;
-	offsetY = offsetY || 0;
+
 	var currentMiddleX = this.public.leftTopX + this.canvasArray[0].width / this.public.zoom / 2;
 	var currentMiddleY = this.public.leftTopY + this.canvasArray[0].height / this.public.zoom / 2;
-	currentMiddleX -= offsetX;
-	currentMiddleY -= offsetY;
+	//currentMiddleX -= pointX / this.public.zoom;
+	//currentMiddleY -= pointY / this.public.zoom;
+	var newX = pointX / zoomFactor - this.canvasArray[0].width / zoomFactor / 2;
+	var newY = pointY / zoomFactor - this.canvasArray[0].height / zoomFactor / 2;
+	
+	if(zoomFactor==1){
+		newX=Math.round(newX)
+		newY=Math.round(newY)
+	}
+
+	this.public.absoluteZoom(zoomFactor);
+	this.background.absoluteZoom(zoomFactor);
+	this.local.absoluteZoom(zoomFactor);
+	console.log(newX,newY);
+
+	this.goto(newX, newY);
+
+	this.effectsCanvasCtx.clearRect(0, 0, this.effectsCanvas.width, this.effectsCanvas.height);
+	this.redrawPaths();
+	this.redrawFrames();
+}
+
+Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
+	if((zoomFactor>0.98)&&(zoomFactor<1.02)) zoomFactor=1
+	
+	var currentMiddleX = this.public.leftTopX + this.canvasArray[0].width / this.public.zoom / 2;
+	var currentMiddleY = this.public.leftTopY + this.canvasArray[0].height / this.public.zoom / 2;
+
 	var newX = currentMiddleX - this.canvasArray[0].width / zoomFactor / 2;
 	var newY = currentMiddleY - this.canvasArray[0].height / zoomFactor / 2;
 	
@@ -1185,6 +1226,7 @@ Paint.prototype.tools = {
 		// Get the coordinates relative to the canvas
 		var targetCoords = paint.getCoords(event);
 		var scaledCoords = paint.scaledCoords(targetCoords, event);
+		
 
 		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastZoomPoint) {
 			paint.lastZoomPoint = scaledCoords;
@@ -1251,13 +1293,12 @@ Paint.prototype.tools = {
 			var context = paint.effectsCanvasCtx;
 			context.beginPath();
 
-			//if (typeof context.setLineDash == "function")
-			//	context.setLineDash([6]);
+			if (typeof context.setLineDash == "function")
+				context.setLineDash([6]);
 
 			context.rect(x2, y2, width, 1);
 			context.lineWidth = 3;
 			context.strokeStyle = "red";
-			context.rect(currentMiddleX, currentMiddleY, width, 1);
 			context.stroke();
 			
 			scale = x1 - x3;
@@ -1267,12 +1308,9 @@ Paint.prototype.tools = {
 				paint.zoomAbsolute(paint.public.zoom * ( 1 / zoomFactor ));
 				
 			} else if (scale > 0) {//zoom in
-				offsetX = x2 / zoomFactor;
-				offsetY = y2 / zoomFactor;
-				paint.zoomAbsolute(paint.public.zoom * ( zoomFactor ), offsetX, offsetY);
+				paint.zoomAbsolute(paint.public.zoom * ( zoomFactor ));
 			}
-			
-			
+
 			paint.lastZoomPointAlt = scaledCoords;
 		}	
 	},
@@ -1511,6 +1549,10 @@ Paint.prototype.tools = {
 			return;
 		}
 
+		if (event.button === 2){
+			console.log("right", event);
+			return;
+		}
 		// Get the coordinates relative to the canvas
 		var targetCoords = paint.getCoords(event);
 
