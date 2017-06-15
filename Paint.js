@@ -1072,12 +1072,14 @@ Paint.prototype.zoom = function zoom (zoomFactor) {
 	this.zoomAbsolute(this.public.zoom * zoomFactor);
 };
 
-Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
+Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor, offsetX, offsetY) {
 	if((zoomFactor>0.98)&&(zoomFactor<1.02)) zoomFactor=1
-	
+	offsetX = offsetX || 0;
+	offsetY = offsetY || 0;
 	var currentMiddleX = this.public.leftTopX + this.canvasArray[0].width / this.public.zoom / 2;
 	var currentMiddleY = this.public.leftTopY + this.canvasArray[0].height / this.public.zoom / 2;
-
+	currentMiddleX -= offsetX;
+	currentMiddleY -= offsetY;
 	var newX = currentMiddleX - this.canvasArray[0].width / zoomFactor / 2;
 	var newY = currentMiddleY - this.canvasArray[0].height / zoomFactor / 2;
 	
@@ -1186,14 +1188,19 @@ Paint.prototype.tools = {
 
 		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastZoomPoint) {
 			paint.lastZoomPoint = scaledCoords;
+			paint.lastZoomPointAlt = scaledCoords;
 		}
 
 		if (event.type == "mouseup" || event.type == "touchend") {
 			// If mouseup is on the same point as mousedown we switch behaviour by making
 			// a box between two clicks instead of dragging the box around
+			delete paint.lastZoomPoint;
+			/*
 			if (paint.lastZoomPoint[0] == scaledCoords[0] && paint.lastZoomPoint[1] == scaledCoords[1]) {
 				return;
 			}
+			
+			
 
 			var x1 = Math.round(paint.local.leftTopX + (paint.lastZoomPoint[0] / paint.local.zoom));
 			var y1 = Math.round(paint.local.leftTopY + (paint.lastZoomPoint[1] / paint.local.zoom));
@@ -1221,32 +1228,52 @@ Paint.prototype.tools = {
 
 			delete paint.lastZoomPoint;
 			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
+			*/
 		}
 
 		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastZoomPoint) {
 			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
-
+			
 			var x1 = scaledCoords[0];
 			var y1 = scaledCoords[1];
 			var x2 = paint.lastZoomPoint[0];
 			var y2 = paint.lastZoomPoint[1];
+			
+			var x3 = paint.lastZoomPointAlt[0];
+			var y3 = paint.lastZoomPointAlt[1];
 
 			var minX = Math.min(x1, x2);
 			var minY = Math.min(y1, y2);
 
-			var width = Math.abs(x1 - x2);
+			var width = x1 - x2;
 			var height = Math.abs(y1 - y2);
 
 			var context = paint.effectsCanvasCtx;
 			context.beginPath();
 
-			if (typeof context.setLineDash == "function")
-				context.setLineDash([6]);
+			//if (typeof context.setLineDash == "function")
+			//	context.setLineDash([6]);
 
-			context.rect(minX, minY, width, height);
+			context.rect(x2, y2, width, 1);
 			context.lineWidth = 3;
-			context.strokeStyle = "gray";
+			context.strokeStyle = "red";
+			context.rect(currentMiddleX, currentMiddleY, width, 1);
 			context.stroke();
+			
+			scale = x1 - x3;
+			zoomFactor = 1.1;
+			if(scale < 0) { // zoom out
+				
+				paint.zoomAbsolute(paint.public.zoom * ( 1 / zoomFactor ));
+				
+			} else if (scale > 0) {//zoom in
+				offsetX = x2 / zoomFactor;
+				offsetY = y2 / zoomFactor;
+				paint.zoomAbsolute(paint.public.zoom * ( zoomFactor ), offsetX, offsetY);
+			}
+			
+			
+			paint.lastZoomPointAlt = scaledCoords;
 		}	
 	},
 	select: function select (paint, event) {
