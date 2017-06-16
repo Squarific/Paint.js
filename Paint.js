@@ -409,7 +409,13 @@ Paint.prototype.keydown = function keydown (event) {
 	var key = event.keyCode || event.which;
 
 	if (event.target == document.body) {
-		//console.log("Keydown", event);
+		if ( event.ctrlKey && key == 32) {
+			if(this.current_tool !== "zoom") {
+				this.previous_tool = this.current_tool;
+				this.changeTool("zoom");
+			}
+			return;
+		}
 
 		if (key == 27) {
 			this.setRotation(0);
@@ -427,6 +433,8 @@ Paint.prototype.keydown = function keydown (event) {
 			this.changeTool("picker");
 			this.altPressed = true;
 		}
+		
+		
 
 		if (event.ctrlKey && event.keyCode == 90) {
 			this.undo();
@@ -439,7 +447,11 @@ Paint.prototype.keyup = function keyup (event) {
 	var key = event.keyCode || event.which;
 
 	if (event.target == document.body) {
-		//console.log("Keyup", event);
+		
+		if (this.current_tool == "zoom" && event.ctrlKey && key == 32) {
+			this.changeTool(this.previous_tool);
+			return;
+		}
 
 		if (this.current_tool == "grab" && key == 32 && this.previous_tool) {
 			this.changeTool(this.previous_tool);
@@ -1230,43 +1242,7 @@ Paint.prototype.tools = {
 		}
 
 		if (event.type == "mouseup" || event.type == "touchend") {
-			// If mouseup is on the same point as mousedown we switch behaviour by making
-			// a box between two clicks instead of dragging the box around
 			delete paint.lastZoomPoint;
-			/*
-			if (paint.lastZoomPoint[0] == scaledCoords[0] && paint.lastZoomPoint[1] == scaledCoords[1]) {
-				return;
-			}
-			
-			
-
-			var x1 = Math.round(paint.local.leftTopX + (paint.lastZoomPoint[0] / paint.local.zoom));
-			var y1 = Math.round(paint.local.leftTopY + (paint.lastZoomPoint[1] / paint.local.zoom));
-
-			var x2 = Math.round(paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom));
-			var y2 = Math.round(paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom));
-
-			var minX = Math.min(x1, x2);
-			var minY = Math.min(y1, y2);
-
-			var width = Math.abs(x1 - x2);
-			var height = Math.abs(y1 - y2);
-
-			var zoom = Math.min(paint.canvasArray[0].width / width,
-			                    paint.canvasArray[1].height / height);
-
-			var extraWidth = (paint.canvasArray[0].width - zoom * width) / 2;
-			var extraHeight = (paint.canvasArray[1].height - zoom * height) / 2;
-
-			// Set the zoom to the least zoom that we require
-			paint.zoomAbsolute(zoom);
-
-			// Goto the top left corner
-			paint.goto(minX - extraWidth / zoom, minY - extraHeight / zoom);
-
-			delete paint.lastZoomPoint;
-			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
-			*/
 		}
 
 		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastZoomPoint) {
