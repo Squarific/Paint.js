@@ -354,7 +354,7 @@ Paint.prototype.keypress = function keypress (event) {
 	var key = event.keyCode || event.which;
 
 	if (event.target == document.body) {
-		console.log("Keypress", event);
+		//console.log("Keypress", event);
 
 		if (key == 99) {
 			console.log("Pressed C, toggling color selector.");
@@ -409,7 +409,7 @@ Paint.prototype.keydown = function keydown (event) {
 	var key = event.keyCode || event.which;
 
 	if (event.target == document.body) {
-		console.log("Keydown", event);
+		//console.log("Keydown", event);
 
 		if (key == 27) {
 			this.setRotation(0);
@@ -439,7 +439,7 @@ Paint.prototype.keyup = function keyup (event) {
 	var key = event.keyCode || event.which;
 
 	if (event.target == document.body) {
-		console.log("Keyup", event);
+		//console.log("Keyup", event);
 
 		if (this.current_tool == "grab" && key == 32 && this.previous_tool) {
 			this.changeTool(this.previous_tool);
@@ -875,12 +875,11 @@ Paint.prototype.exectool = function exectool (event) {
 		event.preventDefault();
 
 	if (typeof this.tools[this.current_tool] == "function") {
-		if (event.button === 2) { // right click
-			if (this.current_tool === "picker") {
-				console.log(event);
-			}
+		if (event.button === 2 && event.altKey) { // right click
+			this.tools["change_size"](this, event);
 		}
-		this.tools[this.current_tool](this, event);
+		else
+			this.tools[this.current_tool](this, event);
 	}
 
 	if (typeof event == "object") {
@@ -1549,8 +1548,7 @@ Paint.prototype.tools = {
 			return;
 		}
 
-		if (event.button === 2){
-			console.log("right", event);
+		if (event.button === 2){//right click
 			return;
 		}
 		// Get the coordinates relative to the canvas
@@ -1647,6 +1645,63 @@ Paint.prototype.tools = {
 			paint.effectsCanvasCtx.fillStyle = paint.current_color.toRgbString();
 			paint.effectsCanvasCtx.fillText(paint.textToolInput.value.slice(0, 256), paint.lastMovePoint[0], paint.lastMovePoint[1]);
 			paint.lastToolText = paint.textToolInput.value.slice(0, 256);
+		}
+	},
+	change_size: function change_size (paint, event) {
+		// Get the coordinates relative to the canvas
+		var targetCoords = paint.getCoords(event);
+		var scaledCoords = paint.scaledCoords(targetCoords, event);
+		
+		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastChangeSizePoint) {
+			paint.lastChangeSizePoint = scaledCoords;
+			paint.lastChangeSizePointAlt = scaledCoords;
+			console.log("down");
+
+		}
+
+		if (event.type == "mouseup" || event.type == "touchend") {
+			delete paint.lastChangeSizePoint;
+		}
+		
+		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastChangeSizePoint) {
+			console.log("moveaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+			
+			
+			
+			var x1 = scaledCoords[0];
+			var y1 = scaledCoords[1];
+
+			var x3 = paint.lastChangeSizePointAlt[0];
+			var y3 = paint.lastChangeSizePointAlt[1];
+			
+			var delta = x1 - x3;
+			
+			if (delta < 0) { // mouse move left
+				paint.changeToolSize(--paint.current_size, true);
+			} else if (delta > 0) {
+				paint.changeToolSize(++paint.current_size, true);
+			}
+			paint.lastChangeSizePointAlt = scaledCoords;
+			
+			// Clear the previous mouse dot
+			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
+            
+			// Draw the current mouse position
+			var context = paint.effectsCanvasCtx;
+			context.beginPath();
+			context.arc(paint.lastChangeSizePoint[0], paint.lastChangeSizePoint[1], (paint.current_size * paint.local.zoom) / 2, 0, 2 * Math.PI, true);
+            
+			if (paint.current_color.type == "gradient") {
+				if (!paint.current_color[0]) {
+					context.fillStyle = "black";
+				} else {
+					context.fillStyle = paint.current_color[0].color.toRgbString();	
+				}
+			} else {
+				context.fillStyle = paint.current_color.toRgbString();
+			}
+            
+			context.fill();
 		}
 	}
 };
