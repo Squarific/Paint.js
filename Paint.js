@@ -354,7 +354,6 @@ Paint.prototype.keypress = function keypress (event) {
 	var key = event.keyCode || event.which;
 
 	if (event.target == document.body) {
-		//console.log("Keypress", event);
 
 		if (key == 99) {
 			console.log("Pressed C, toggling color selector.");
@@ -1622,7 +1621,6 @@ Paint.prototype.tools = {
 			paint.lastChangeSizePoint = scaledCoords;
 			paint.lastChangeSizePointAlt = scaledCoords;
 			console.log("down");
-
 		}
 
 		if (event.type == "mouseup" || event.type == "touchend") {
@@ -1630,10 +1628,6 @@ Paint.prototype.tools = {
 		}
 		
 		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastChangeSizePoint) {
-			console.log("moveaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-			
-			
-			
 			var x1 = scaledCoords[0];
 			var y1 = scaledCoords[1];
 
