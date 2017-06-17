@@ -37,6 +37,9 @@ function Paint (container, settings) {
 	this.publicdrawings = [];
 	
 	this.altPressed = false;
+	this.rightClick = false;
+	this.leftClick = false;
+	this.keyMap = []; // https://stackoverflow.com/questions/29266602/javascript-when-having-pressed-2-keys-simultaneously-down-leaving-one-of-them
 
 	window.addEventListener("resize", this.resize.bind(this));
 	window.addEventListener("keypress", this.keypress.bind(this));
@@ -408,9 +411,12 @@ Paint.prototype.keydown = function keydown (event) {
 	var key = event.keyCode || event.which;
 
 	if (event.target == document.body) {
-		if ( event.ctrlKey && key == 32) {
+		this.keyMap[key] = true;		
+		
+		if ( event.ctrlKey && (key == 32 || this.keyMap[32])) {
 			if(this.current_tool !== "zoom") {
-				this.previous_tool = this.current_tool;
+				if(this.current_tool !== "grab")
+					this.previous_tool = this.current_tool;
 				this.changeTool("zoom");
 			}
 			return;
@@ -432,8 +438,6 @@ Paint.prototype.keydown = function keydown (event) {
 			this.changeTool("picker");
 			this.altPressed = true;
 		}
-		
-		
 
 		if (event.ctrlKey && event.keyCode == 90) {
 			this.undo();
@@ -446,8 +450,9 @@ Paint.prototype.keyup = function keyup (event) {
 	var key = event.keyCode || event.which;
 
 	if (event.target == document.body) {
+		this.keyMap[key] = null;
 		
-		if (this.current_tool == "zoom" && event.ctrlKey || key == 32) {
+		if (this.current_tool == "zoom" && event.ctrlKey || key == 32 || this.keyMap[32]) {
 			this.changeTool(this.previous_tool);
 			return;
 		}
@@ -887,9 +892,26 @@ Paint.prototype.exectool = function exectool (event) {
 	// Don't do the default stuff
 	if (event && typeof event.preventDefault == "function")
 		event.preventDefault();
+	
+	if (event.type == "mousedown") {
+		if (event.button === 0) {
+			this.leftClick = true;
+		}
+		if (event.button === 2) {
+			this.rightClick = true;
+		}
+	}
+	else if (event.type == "mouseup") {
+		if (event.button === 0) {
+			this.leftClick = false;
+		}
+		if (event.button === 2) {
+			this.rightClick = false;
+		}
+	}
 
 	if (typeof this.tools[this.current_tool] == "function") {
-		if (event.button === 2 && event.altKey) { // right click
+		if (this.rightClick && event.altKey) { // right click
 			this.tools["change_size"](this, event);
 		}
 		else
@@ -1515,14 +1537,10 @@ Paint.prototype.tools = {
 			paint.effectsCanvas.style.cursor = "";
 			return;
 		}
-
-		if (event.button === 2){//right click
-			return;
-		}
 		// Get the coordinates relative to the canvas
 		var targetCoords = paint.getCoords(event);
 
-		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.picking) {
+		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.picking && !paint.rightClick) {
 			paint.picking = true;
 			paint.setColor(paint.getColorAt(targetCoords).setAlpha(paint.current_color.getAlpha()));
 			paint.effectsCanvas.style.cursor = "crosshair";
@@ -1620,10 +1638,9 @@ Paint.prototype.tools = {
 		var targetCoords = paint.getCoords(event);
 		var scaledCoords = paint.scaledCoords(targetCoords, event);
 		
-		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastChangeSizePoint) {
+		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastChangeSizePoint && !paint.leftClick) {
 			paint.lastChangeSizePoint = scaledCoords;
 			paint.lastChangeSizePointAlt = scaledCoords;
-			console.log("down");
 		}
 
 		if (event.type == "mouseup" || event.type == "touchend") {
