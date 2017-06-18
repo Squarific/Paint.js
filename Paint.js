@@ -415,8 +415,7 @@ Paint.prototype.keydown = function keydown (event) {
 		
 		if ( event.ctrlKey && (key == 32 || this.keyMap[32])) {
 			if(this.current_tool !== "zoom") {
-				if(this.current_tool !== "grab")
-					this.previous_tool = this.current_tool;
+				this.previous_tool = this.current_tool;
 				this.changeTool("zoom");
 			}
 			return;
@@ -1549,6 +1548,7 @@ Paint.prototype.tools = {
 		if (event.type == "mouseup" || event.type == "touchend") {
 			delete paint.picking;
 			paint.effectsCanvas.style.cursor = "";
+			this.change_size(paint,"remove");
 		}
 
 		if (event.type == "mousemove" || event.type == "touchmove") {
@@ -1634,6 +1634,12 @@ Paint.prototype.tools = {
 		}
 	},
 	change_size: function change_size (paint, event) {
+		if (event == "remove") {
+			delete paint.lastChangeSizePoint;
+			delete paint.lastChangeSizePointAlt;
+			return;
+		}
+		
 		// Get the coordinates relative to the canvas
 		var targetCoords = paint.getCoords(event);
 		var scaledCoords = paint.scaledCoords(targetCoords, event);
@@ -1641,10 +1647,6 @@ Paint.prototype.tools = {
 		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastChangeSizePoint && !paint.leftClick) {
 			paint.lastChangeSizePoint = scaledCoords;
 			paint.lastChangeSizePointAlt = scaledCoords;
-		}
-
-		if (event.type == "mouseup" || event.type == "touchend") {
-			delete paint.lastChangeSizePoint;
 		}
 		
 		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastChangeSizePoint) {
