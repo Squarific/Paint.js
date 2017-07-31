@@ -47,6 +47,11 @@ function Paint (container, settings) {
 	window.addEventListener("keyup", this.keyup.bind(this));
 	window.addEventListener('wheel', this.wheel.bind(this));
 
+	//addEventListener didn't work
+	window.onmouseout = function detectAltTab() {
+		this.altPressed = false;
+	}.bind(this);
+	
 	//introJs().setOptions({ 'tooltipPosition': 'auto', 'showProgress': true }).start();
 }
 
