@@ -185,15 +185,15 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 
 	this.effectsCanvas = effectC;
 	this.effectsCanvasCtx = effectC.getContext("2d");
-
-	effectC.addEventListener("mousedown", this.exectool.bind(this));
-	effectC.addEventListener("mousemove", this.exectool.bind(this));
-	effectC.addEventListener("mouseup", this.exectool.bind(this));
-	effectC.addEventListener("mouseleave", this.exectool.bind(this));
-
+	
 	effectC.addEventListener("touchstart", this.exectool.bind(this));
 	effectC.addEventListener("touchmove", this.exectool.bind(this));
 	effectC.addEventListener("touchend", this.exectool.bind(this));
+	
+	effectC.addEventListener("pointerdown", this.exectool.bind(this));
+	effectC.addEventListener("pointermove", this.exectool.bind(this));
+	effectC.addEventListener("pointerup", this.exectool.bind(this));
+	effectC.addEventListener("pointerout", this.exectool.bind(this));
 
 	this.canvasArray = [backgroundC, publicC, frameC, localC, effectC];
 
@@ -357,7 +357,7 @@ Paint.prototype.keypress = function keypress (event) {
 		//console.log("Keypress", event);
 
 		if (key == 99) {
-			console.log("Pressed C, toggling color selector.");
+			//console.log("Pressed C, toggling color selector.");
 			$(this.controls.byName["tool-color"].input).spectrum("toggle");
 		}
 
@@ -455,7 +455,7 @@ Paint.prototype.keyup = function keyup (event) {
 Paint.prototype.wheel = function wheel (event) { // <---- new function
 
 	if (this.altPressed) {
-		console.log("Wheel", event);
+		//console.log("Wheel", event);
 
 		if (event.deltaY < 0){
 			//scrolling up
@@ -874,6 +874,10 @@ Paint.prototype.exectool = function exectool (event) {
 	if (event && typeof event.preventDefault == "function")
 		event.preventDefault();
 
+	// Don't use PointerEvent's touch system. it's not fully functional
+	if( event.pointerType == "touch" && event.__proto__.toString() == "[object PointerEvent]" )
+		return;
+
 	if (typeof this.tools[this.current_tool] == "function") {
 		if (event.button === 2 && event.altKey) { // right click
 			this.tools["change_size"](this, event);
@@ -1227,12 +1231,12 @@ Paint.prototype.tools = {
 		var scaledCoords = paint.scaledCoords(targetCoords, event);
 		
 
-		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastZoomPoint) {
+		if ((event.type == "pointerdown" || event.type == "touchstart") && !paint.lastZoomPoint) {
 			paint.lastZoomPoint = scaledCoords;
 			paint.lastZoomPointAlt = scaledCoords;
 		}
 
-		if (event.type == "mouseup" || event.type == "touchend") {
+		if (event.type == "pointerup" || event.type == "touchend") {
 			// If mouseup is on the same point as mousedown we switch behaviour by making
 			// a box between two clicks instead of dragging the box around
 			delete paint.lastZoomPoint;
@@ -1272,7 +1276,7 @@ Paint.prototype.tools = {
 			*/
 		}
 
-		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastZoomPoint) {
+		if ((event.type == "pointermove" || event.type == "touchmove") && paint.lastZoomPoint) {
 			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
 			
 			var x1 = scaledCoords[0];
@@ -1330,11 +1334,11 @@ Paint.prototype.tools = {
 		var targetCoords = paint.getCoords(event);
 		var scaledCoords = paint.scaledCoords(targetCoords, event);
 
-		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastSelectPoint) {
+		if ((event.type == "pointerdown" || event.type == "touchstart") && !paint.lastSelectPoint) {
 			paint.lastSelectPoint = scaledCoords;
 		}
 
-		if (event.type == "mouseup" || event.type == "touchend") {
+		if (event.type == "pointerup" || event.type == "touchend") {
 			// If mouseup is on the same point as mousedown we switch behaviour by making
 			// a box between two clicks instead of dragging the box around
 			if (paint.lastSelectPoint[0] == scaledCoords[0] && paint.lastSelectPoint[1] == scaledCoords[1]) {
@@ -1357,7 +1361,7 @@ Paint.prototype.tools = {
 			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
 		}
 
-		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastSelectPoint) {
+		if ((event.type == "pointermove" || event.type == "touchmove") && paint.lastSelectPoint) {
 			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
 
 			var x1 = scaledCoords[0];
@@ -1385,7 +1389,7 @@ Paint.prototype.tools = {
 	},
 	grab: function grab (paint, event) {
 		// Tool canceled or deselected
-		if (event == "remove" || event.type == "mouseup" || event.type == "touchend" || event.type === 'mouseleave') {
+		if (event == "remove" || event.type == "pointerup" || event.type == "touchend" || event.type === 'pointerout') {
 			delete paint.lastGrabCoords;
 			paint.effectsCanvas.style.cursor = "";
 			return;
@@ -1399,13 +1403,13 @@ Paint.prototype.tools = {
 		if (!paint.lastGrabCoords) {
 			// If this is just a mousemove we are just moving
 			// our mouse without holding the button down
-			if (event.type == "mousedown" || event.type == "touchstart") {
+			if (event.type == "pointerdown" || event.type == "touchstart") {
 				paint.lastGrabCoords = scaledCoords;
 				paint.effectsCanvas.style.cursor = "move";
 			}
 		}
 
-		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastGrabCoords) {
+		if ((event.type == "pointermove" || event.type == "touchmove") && paint.lastGrabCoords) {
 			// How much should the drawings be moved
 			var relativeMotionX = paint.lastGrabCoords[0] - scaledCoords[0],
 			    relativeMotionY = paint.lastGrabCoords[1] - scaledCoords[1];
@@ -1427,11 +1431,11 @@ Paint.prototype.tools = {
 		var targetCoords = paint.getCoords(event);
 		var scaledCoords = paint.scaledCoords(targetCoords, event);
 
-		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastLinePoint) {
+		if ((event.type == "pointerdown" || event.type == "touchstart") && !paint.lastLinePoint) {
 			paint.lastLinePoint = scaledCoords;
 		}
 
-		if (event.type == "mouseup" || event.type == "touchend") {
+		if (event.type == "pointerup" || event.type == "touchend") {
 			// If mouseup is on the same point as mousedown we switch behaviour by making
 			// a line between two clicks instead of dragging
 			if (paint.lastLinePoint[0] == scaledCoords[0] && paint.lastLinePoint[1] == scaledCoords[1]) {
@@ -1452,7 +1456,7 @@ Paint.prototype.tools = {
 			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
 		}
 
-		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastLinePoint) {
+		if ((event.type == "pointermove" || event.type == "touchmove") && paint.lastLinePoint) {
 			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);
 
 			// TODO refactor this to use drawFunctions
@@ -1476,12 +1480,14 @@ Paint.prototype.tools = {
 		}
 	},
 	brush: function brush (paint, event, type) {
+		//console.log(event, event.pointerType, event.x, event.y);
 		if (event == "remove") {
 			delete paint.lastMovePoint;
 			delete paint.lockcolor;
 			delete paint.brushing;
 			return;
 		}
+		
 
 		paint.lastMovePoint = paint.lastMovePoint || [0, 0];
 
@@ -1489,23 +1495,35 @@ Paint.prototype.tools = {
 		var targetCoords = paint.getCoords(event);
 		var scaledCoords = paint.scaledCoords(targetCoords, event);
 
-		if (event.type == "mousedown" || event.type == "touchstart") {
+		if (event.type == "pointerdown" || event.type == "touchstart") {
 			paint.brushing = true;
 			paint.addUserPath();
-			paint.addUserPathPoint([Math.round((paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
-			                        Math.round((paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION]);
-
+			
 			// Clear the previous mouse dot
 			paint.effectsCanvasCtx.clearRect(paint.lastMovePoint[0] - paint.current_size * paint.local.zoom * 2, paint.lastMovePoint[1] - paint.current_size * paint.local.zoom * 2, paint.current_size * paint.local.zoom * 4, paint.current_size * paint.local.zoom * 4);
-
+			
+			//chrome bug hotfix
+			paint.lastPointerDownType = event.pointerType;
+			// so we dont mix pointer types
+			// recreate case: enable windows ink
+			// 1. move mouse to left side of canvas
+			// 2. move pen to right side of canvas
+			// 3. move mouse again and it will jump to left side where it was left
+			// bug:
+			// 1. everytime pointerdown is fired with pointerType == "pen" 
+			//    the proceeding pointermove is always pointerType == "mouse"
+			// 2. this causes a sudden jolting line to the position where the mouse was last moved
+			//    and where the pen currently is.
 		}
 
-		if (event.type == "mouseup" || event.type == "touchend" || event.type == "mouseleave") {
+		if ( event.type == "pointerup" || event.type == "pointerout" || event.type == "touchend") {
 			paint.endUserPath();
 			paint.brushing = false;
+		 	//delete paint.lastPointerDownType;
+			//console.log("endpathing");
 		}
 
-		if (event.type == "mousemove" || event.type == "touchmove") {
+		if (event.type == "pointermove" || event.type == "touchmove") {
 			// If we are brushing we don't need to draw a preview
 			if (!this.brushing) {
 				// Clear the previous mouse dot
@@ -1535,7 +1553,7 @@ Paint.prototype.tools = {
 
 
 			// If the last brush point is set we are currently drawing
-			if (paint.brushing) {
+			if (paint.brushing && paint.lastPointerDownType == event.pointerType) {
 				paint.addUserPathPoint([Math.round((paint.local.leftTopX + (scaledCoords[0] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION,
 			                            Math.round((paint.local.leftTopY + (scaledCoords[1] / paint.local.zoom)) * paint.PATH_PRECISION) / paint.PATH_PRECISION]);
 			}
@@ -1554,18 +1572,18 @@ Paint.prototype.tools = {
 		// Get the coordinates relative to the canvas
 		var targetCoords = paint.getCoords(event);
 
-		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.picking) {
+		if ((event.type == "pointerdown" || event.type == "touchstart") && !paint.picking) {
 			paint.picking = true;
 			paint.setColor(paint.getColorAt(targetCoords).setAlpha(paint.current_color.getAlpha()));
 			paint.effectsCanvas.style.cursor = "crosshair";
 		}
 
-		if (event.type == "mouseup" || event.type == "touchend") {
+		if (event.type == "pointerup" || event.type == "touchend") {
 			delete paint.picking;
 			paint.effectsCanvas.style.cursor = "";
 		}
 
-		if (event.type == "mousemove" || event.type == "touchmove") {
+		if (event.type == "pointermove" || event.type == "touchmove") {
 			if (paint.picking)
 				paint.setColor(paint.getColorAt(targetCoords).setAlpha(paint.current_color.getAlpha()));
 		}
@@ -1604,7 +1622,7 @@ Paint.prototype.tools = {
 
 		paint.textToolInput.focus();
 
-		if ((event.type == "mouseup" || event.type == "touchend") && paint.textToolInput.value) {
+		if ((event.type == "pointerup" || event.type == "touchend") && paint.textToolInput.value) {
 			paint.addUserDrawing({
 				type: "text",
 				text: paint.textToolInput.value.slice(0, 256) || "",
@@ -1616,7 +1634,7 @@ Paint.prototype.tools = {
 			paint.textToolInput.value = "";
 		}
 
-		if (event.type == "mousemove" || event.type == "touchmove") {
+		if (event.type == "pointermove" || event.type == "touchmove") {
 			paint.lastMovePoint = paint.lastMovePoint || [0, 0];
 
 			paint.effectsCanvasCtx.font = paint.current_size * paint.local.zoom + "px Verdana, Geneva, sans-serif";
@@ -1652,22 +1670,18 @@ Paint.prototype.tools = {
 		var targetCoords = paint.getCoords(event);
 		var scaledCoords = paint.scaledCoords(targetCoords, event);
 		
-		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastChangeSizePoint) {
+		if ((event.type == "pointerdown" || event.type == "touchstart") && !paint.lastChangeSizePoint) {
 			paint.lastChangeSizePoint = scaledCoords;
 			paint.lastChangeSizePointAlt = scaledCoords;
-			console.log("down");
+			//console.log("down");
 
 		}
 
-		if (event.type == "mouseup" || event.type == "touchend") {
+		if (event.type == "pointerup" || event.type == "touchend") {
 			delete paint.lastChangeSizePoint;
 		}
 		
-		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastChangeSizePoint) {
-			console.log("moveaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-			
-			
-			
+		if ((event.type == "pointermove" || event.type == "touchmove") && paint.lastChangeSizePoint) {
 			var x1 = scaledCoords[0];
 			var y1 = scaledCoords[1];
 
