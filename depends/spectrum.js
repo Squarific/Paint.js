@@ -1023,8 +1023,8 @@
         var duringDragEvents = {};
         duringDragEvents["selectstart"] = prevent;
         duringDragEvents["dragstart"] = prevent;
-        duringDragEvents["touchmove mousemove"] = move;
-        duringDragEvents["touchend mouseup"] = stop;
+        duringDragEvents["touchmove pointermove"] = move;
+        duringDragEvents["touchend pointerup"] = stop;
 
         function prevent(e) {
             if (e.stopPropagation) {
@@ -1090,7 +1090,7 @@
             dragging = false;
         }
 
-        $(element).bind("touchstart mousedown", start);
+        $(element).bind("pointerdown", start);
     }
 
     function throttle(func, wait, debounce) {
