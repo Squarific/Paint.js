@@ -1711,9 +1711,9 @@ Paint.prototype.tools = {
 			change = change > 10 ? 10 : change;
 			
 			if (delta < 0) { // mouse move left
-				paint.setRotation(paint.rotation + change);
-			} else if (delta > 0) {
 				paint.setRotation(paint.rotation - change);
+			} else if (delta > 0) {
+				paint.setRotation(paint.rotation + change);
 			}
 			paint.lastChangeRotationPoint = targetCoords;
 		}
