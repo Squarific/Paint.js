@@ -537,7 +537,7 @@ Paint.prototype.drawFrame = function drawFrame (frame, framesContext) {
 	var to = [frame.leftTop[0] + frame.width, frame.leftTop[1] + frame.height];
 	var frameCanvas = this.exportImage(frame.leftTop, to, true);
 	
-	var relativeX = frame.leftTop[0] - this.public.leftTopX + frame.shift;
+	var relativeX = frame.leftTop[0] + frame.gutter - this.public.leftTopX + frame.shift;
 	var relativeY = frame.leftTop[1] - this.public.leftTopY;
 	
 	framesContext.globalAlpha = frame.opacity;
@@ -661,14 +661,15 @@ Paint.prototype.removeLocalDrawing = function removeLocalDrawing (drawing) {
 
 // From, to: [0, 0]
 // frames: number of frames
-Paint.prototype.addFrame = function addFrame (from, to, frames, opacity) {
+Paint.prototype.addFrame = function addFrame (from, to, frames, opacity, gutter) {
 	var width = Math.abs(from[0] - to[0]);
 	this.frames.push({
 		leftTop: [Math.min(from[0], to[0]), Math.min(from[1], to[1])],
 		width: width,
 		height: Math.abs(from[1] - to[1]),
 		shift: width / frames,
-		opacity: opacity
+		opacity: opacity,
+		gutter: gutter || 0
 	});
 	this.redrawFrames();
 };
