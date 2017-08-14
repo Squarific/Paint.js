@@ -661,11 +661,11 @@ Paint.prototype.removeLocalDrawing = function removeLocalDrawing (drawing) {
 
 // From, to: [0, 0]
 // frames: number of frames
-Paint.prototype.addFrame = function addFrame (from, to, frames, opacity, gutter, shift) {
+Paint.prototype.addFrame = function addFrame (from, to, frames, opacity, gutter, shift, customWidth) {
 	var width = Math.abs(from[0] - to[0]);
 	this.frames.push({
 		leftTop: [Math.min(from[0], to[0]), Math.min(from[1], to[1])],
-		width: width,
+		width: customWidth || width,
 		height: Math.abs(from[1] - to[1]),
 		shift: shift || (width / frames),
 		opacity: opacity,
