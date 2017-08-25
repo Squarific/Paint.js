@@ -252,6 +252,7 @@ TiledCanvas.prototype.garbageCollect = function garbageCollect () {
 		for (var x in this.chunks) {
 			for (var y in this.chunks[x]) {
 				if (this.canBeUnloaded(x, y) && this.beforeUnloadChunk(x, y)) {
+					this.chunks[x][y] = null;
 					delete this.chunks[x][y];
 				}
 			}
@@ -276,7 +277,7 @@ TiledCanvas.prototype.chunkCount = function chunkCount () {
 TiledCanvas.prototype.canBeUnloaded = function canBeUnloaded (cx, cy) {
 	return this.chunks[cx] &&
 	       this.chunks[cx][cy] &&
-	       Date.now() - this.chunks[cx][cy].lastDrawn > this.MIN_INACTIVE_UNLOAD_TIME &&
+	       Date.now() - (this.chunks[cx][cy].lastDrawn || 0) > this.MIN_INACTIVE_UNLOAD_TIME &&
 	       !this.chunks[cx][cy].hasBeenDrawnOn;
 };
 

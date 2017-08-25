@@ -181,7 +181,9 @@ Paint.prototype.addCanvas = function addCanvas (container) {
 		if((this.public.canBeUnloaded(cx, cy) || (this.public.chunks[cx] && this.public.chunks[cx][cy] == "empty")) &&
 		   (this.background.canBeUnloaded(cx, cy) || (this.background.chunks[cx] && this.background.chunks[cx][cy] == "empty"))) {
 			console.log("Unloading chunk", cx, cy);
+			this.background.chunks[cx][cy] = null;
 			delete this.background.chunks[cx][cy];
+			this.public.chunks[cx][cy] = null;
 			delete this.public.chunks[cx][cy];
 			return true;
 		}
@@ -1291,6 +1293,7 @@ Paint.prototype.tools = {
 			var height = Math.abs(y1 - y2);
 			
 			delta = x1 - x3;
+			delta *= paint.scale[0];
 			zoomFactor = 1.1;
 			if(delta < 0) { // zoom out
 				paint.zoomToPoint(paint.public.zoom * ( 1 / zoomFactor ), x2, y2);
@@ -1657,12 +1660,14 @@ Paint.prototype.tools = {
 			var y3 = paint.lastChangeSizePointAlt[1];
 			
 			var delta = x1 - x3;
+			var change = 1;
 			
 			if (delta < 0) { // mouse move left
-				paint.changeToolSize(--paint.current_size, true);
+				paint.current_size -= change * paint.scale[0];
 			} else if (delta > 0) {
-				paint.changeToolSize(++paint.current_size, true);
+				paint.current_size += change * paint.scale[0];
 			}
+			paint.changeToolSize(paint.current_size, true);
 			paint.lastChangeSizePointAlt = scaledCoords;
 			
 			// Clear the previous mouse dot
@@ -1712,9 +1717,9 @@ Paint.prototype.tools = {
 			change = change > 10 ? 10 : change;
 			
 			if (delta < 0) { // mouse move left
-				paint.setRotation(paint.rotation - change);
+				paint.setRotation(paint.rotation - change * paint.scale[0] * paint.scale[1]);
 			} else if (delta > 0) {
-				paint.setRotation(paint.rotation + change);
+				paint.setRotation(paint.rotation + change * paint.scale[0] * paint.scale[1]);
 			}
 			paint.lastChangeRotationPoint = targetCoords;
 		}
