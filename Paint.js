@@ -221,8 +221,6 @@ Paint.prototype.addCoordDom = function addCoordDom (container) {
 	this.coordDiv = container.appendChild(document.createElement("div"));
 	this.coordDiv.className = "mouse-coords";
 
-	this.coordDiv.setAttribute("data-intro", "Here you can jump to any coordinates you would like to see. The random button brings you to a random location.");
-
 	this.coordDiv.appendChild(document.createTextNode("x:"));
 	var xInput = this.coordDiv.appendChild(document.createElement("input"));
 	this.coordDiv.appendChild(document.createTextNode("y:"));
@@ -252,6 +250,7 @@ Paint.prototype.addCoordDom = function addCoordDom (container) {
 	randomButtonImage.src = "images/icons/randomlocation.png";
 	randomButtonImage.alt = "Jump to random location";
 	randomButtonImage.title = "Jump to random location";
+	randomButton.setAttribute("data-intro", "Since you are new, you are restricted on where you can draw. Use this button to find a spot.");
 
 	randomButton.addEventListener("click", function () {
 		var maxCoords = this.MAX_RANDOM_COORDS;
@@ -995,20 +994,14 @@ Paint.prototype.createControlArray = function createControlArray () {
 		image: "images/icons/grab.png",
 		title: "Change tool to grab",
 		value: "grab",
-		action: this.changeTool.bind(this),
-		data: {
-			intro: "You can use this tool to move around."
-		}
+		action: this.changeTool.bind(this)
 	}, {
 		name: "line",
 		type: "button",
 		image: "images/icons/line.png",
 		title: "Change tool to line",
 		value: "line",
-		action: this.changeTool.bind(this),
-		data: {
-			intro: "With this tool you can make a line, the next one is a normal brush. You can also put text."
-		}
+		action: this.changeTool.bind(this)
 	}, {
 		name: "brush",
 		type: "button",
@@ -1029,39 +1022,27 @@ Paint.prototype.createControlArray = function createControlArray () {
 		image: "images/icons/picker.png",
 		title: "Change tool to picker",
 		value: "picker",
-		action: this.changeTool.bind(this),
-		data: {
-			intro: "Click on the canvas and your color will be changed to that value."
-		}
+		action: this.changeTool.bind(this)
 	}, {
 		name: "zoom",
 		type: "button",
 		image: "images/icons/zoom.png",
 		title: "Change tool to zoom",
 		value: "zoom",
-		action: this.changeTool.bind(this),
-		data: {
-			intro: "Click and drag to zoom in to whatever is inside the box."
-		}
+		action: this.changeTool.bind(this)
 	}, {
 		name: "select",
 		type: "button",
 		image: "images/icons/select.png",
 		title: "Change tool to select",
 		value: "select",
-		action: this.changeTool.bind(this),
-		data: {
-			intro: "Click and drag to select an area."
-		}
+		action: this.changeTool.bind(this)
 	}, {
 		name: "undo",
 		type: "button",
 		image: "images/icons/undo.png",
 		title: "Undo drawing",
-		action: this.undo.bind(this),
-		data: {
-			intro: "Made a mistake? No worry just click here!"
-		}
+		action: this.undo.bind(this)
 	}, /*{
 		name: "block",
 		type: "button",
@@ -1078,20 +1059,14 @@ Paint.prototype.createControlArray = function createControlArray () {
 		max: this.defaultSettings.maxSize,
 		value: 5,
 		title: "Change the size of the tool",
-		action: this.changeToolSize.bind(this),
-		data: {
-			intro: "This changes your brush, line and text size."
-		}
+		action: this.changeToolSize.bind(this)
 	}, {
 		name: "zoom-in",
 		type: "button",
 		image: "images/icons/zoomin.png",
 		title: "Zoom in",
 		value: 1.2,
-		action: this.zoom.bind(this),
-		data: {
-			intro: "These buttons allow you to zoom in or out of the center. Respectivly zoom in, reset zoom and zoom out."
-		}
+		action: this.zoom.bind(this)
 	}, {
 		name: "zoom-reset",
 		type: "button",
