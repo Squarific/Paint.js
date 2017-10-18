@@ -17,6 +17,7 @@ function TiledCanvas (canvas, settings) {
 }
 
 TiledCanvas.prototype.MIN_INACTIVE_UNLOAD_TIME = 10 * 1000;
+TiledCanvas.prototype.MAX_DRAW_TIME = 1000 / 20;
 
 TiledCanvas.prototype.defaultSettings = {
     chunkSize: 1024,                      // The size of the chunks in pixels
@@ -59,9 +60,18 @@ TiledCanvas.prototype.redrawOnce = function redrawOnce () {
         this._redrawTimeout = requestAnimationFrame(this.redraw.bind(this, false));
 };
 
+// Forces a full redraw now, might be paused halfway if it takes too long
+// Cancels queued breakdraws
+// You should probably not call this function yourself, use redrawOnce
 TiledCanvas.prototype.redraw = function redraw (noclear) {
 	cancelAnimationFrame(this._redrawTimeout);
 	delete this._redrawTimeout;
+	
+	// If we are still drawing the last frame, stop doing that
+	if (this.breakDrawing) {
+		this.breakDrawing = false;
+		cancelAnimationFrame(this.breakDrawingRequest);
+	}
 
     if (!noclear) {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
@@ -76,12 +86,65 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
         endChunkX   = Math.ceil((this.leftTopX + this.canvas.width / this.zoom) / this.settings.chunkSize),
         startChunkY = Math.floor(this.leftTopY / this.settings.chunkSize),
         endChunkY   = Math.ceil((this.leftTopY + this.canvas.height / this.zoom) / this.settings.chunkSize);
-    
-    for (var chunkX = startChunkX; chunkX < endChunkX; chunkX++) {
-        for (var chunkY = startChunkY; chunkY < endChunkY; chunkY++) {
+
+	this.breakDraw(startChunkX, startChunkY, startChunkY, endChunkX, endChunkY);
+};
+
+
+/*
+	If a redraw takes too long the user will be left with an unresponsive application.
+	To remedy this we have to return control back to the js interpreter
+	
+	We will save the last chunkX and chunkY. We have to block all new redrawOnce untill we are done though.
+	We also have to remember our original leftTopX and leftTopY and zoom
+	If they changed, we abort and just draw again.
+	
+	This function will make sure next frame we continue and remember all the right params
+*/
+TiledCanvas.prototype.breakDrawInit = function breakDrawInit (chunkX, chunkY, startChunkY, endChunkX, endChunkY) {
+	// This shouldn't happen, but if it does, abort everything and just redraw
+	// This can only happen if we are drawing twice in the same frame
+	if (this.breakDrawingRequest) {
+		console.error("BreakDrawInit called while there is already a breakdraw request. Full redraw in the next frame scheduled.");
+		this.breakDrawing = false;
+		cancelAnimationFrame(this.breakDrawingRequest);
+		this.redrawOnce();
+		return;
+	}
+	
+	this.breakDrawing = true;
+	this.breakDrawingLeftTopX = this.leftTopX;
+	this.breakDrawingLeftTopY = this.leftTopY;
+	this.breakDrawingZoom = this.zoom;
+	this.breakDrawingRequest = requestAnimationFrame(this.breakDraw.bind(this, chunkX, chunkY, startChunkY, endChunkX, endChunkY));
+};
+
+
+TiledCanvas.prototype.breakDraw = function breakDraw (chunkX, chunkY, startChunkY, endChunkX, endChunkY) {
+	cancelAnimationFrame(this.breakDrawingRequest);
+
+	// If we are breakdrawing already, and our params mismacht, abort and just redraw
+	if (this.breakDrawing && (
+			this.leftTopX !== this.breakDrawingLeftTopX ||
+			this.leftTopY !== this.breakDrawingLeftTopY ||
+			this.zoom !== this.breakDrawingZoom
+		)) {
+		return;
+	}
+		
+	var start = Date.now();
+	for (; chunkX < endChunkX; chunkX++) {
+        for (chunkY = startChunkY; chunkY < endChunkY; chunkY++) {
+			if (Date.now() - start > this.MAX_DRAW_TIME) {
+				this.breakDrawInit(chunkX, chunkY, startChunkY, endChunkX, endChunkY);
+				return;
+			}
+			
             this.drawChunk(chunkX, chunkY);
         }
     }
+	
+	this.breakDrawing = false;
 };
 
 TiledCanvas.prototype.drawChunk = function drawChunk (chunkX, chunkY) {
