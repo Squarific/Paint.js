@@ -166,6 +166,7 @@ TiledCanvas.prototype.drawChunk = function drawChunk (chunkX, chunkY) {
 		
     } else if(typeof this.requestUserChunk == "function") {
         this.requestChunk(chunkX, chunkY);
+		
 		if (this.breakDrawing) {
 			this.ctx.fillStyle = "#456789";
 			this.ctx.fillRect(((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
@@ -356,8 +357,8 @@ TiledCanvas.prototype.isInView = function isInView (cx, cy) {
 	var maxX = Math.ceil((this.leftTopX + this.canvas.width / this.zoom) / this.settings.chunkSize);
 	var maxY = Math.ceil((this.leftTopY + this.canvas.height / this.zoom) / this.settings.chunkSize);
 
-	return cx > minX && cx < maxX &&
-	       cy > minY && cy < maxY;
+	return cx >= minX && cx <= maxX &&
+	       cy >= minY && cy <= maxY;
 };
 
 TiledCanvas.prototype.canBeUnloaded = function canBeUnloaded (cx, cy) {
