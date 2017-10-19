@@ -17,7 +17,7 @@ function TiledCanvas (canvas, settings) {
 }
 
 TiledCanvas.prototype.MIN_INACTIVE_UNLOAD_TIME = 10 * 1000;
-TiledCanvas.prototype.MAX_DRAW_TIME = 1000 / 20;
+TiledCanvas.prototype.MAX_DRAW_TIME = 1000 / 30;
 
 TiledCanvas.prototype.defaultSettings = {
     chunkSize: 1024,                      // The size of the chunks in pixels
@@ -67,10 +67,10 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
 	cancelAnimationFrame(this._redrawTimeout);
 	delete this._redrawTimeout;
 	
-	// If we are still drawing the last frame, stop doing that
-	if (this.breakDrawing) {
-		this.breakDrawing = false;
-		cancelAnimationFrame(this.breakDrawingRequest);
+	// If we are still drawing the last frame, wait for it to finish
+	if (this.breakDrawing || this.breakDrawingRequest) {
+		this.redrawOnce();
+		return;
 	}
 
     if (!noclear) {
@@ -108,6 +108,7 @@ TiledCanvas.prototype.breakDrawInit = function breakDrawInit (chunkX, chunkY, st
 		console.error("BreakDrawInit called while there is already a breakdraw request. Full redraw in the next frame scheduled.");
 		this.breakDrawing = false;
 		cancelAnimationFrame(this.breakDrawingRequest);
+		delete this.breakDrawingRequest;
 		this.redrawOnce();
 		return;
 	}
@@ -122,6 +123,7 @@ TiledCanvas.prototype.breakDrawInit = function breakDrawInit (chunkX, chunkY, st
 
 TiledCanvas.prototype.breakDraw = function breakDraw (chunkX, chunkY, startChunkY, endChunkX, endChunkY) {
 	cancelAnimationFrame(this.breakDrawingRequest);
+	delete this.breakDrawingRequest;
 
 	// If we are breakdrawing already, and our params mismacht, abort and just redraw
 	if (this.breakDrawing && (
@@ -129,6 +131,10 @@ TiledCanvas.prototype.breakDraw = function breakDraw (chunkX, chunkY, startChunk
 			this.leftTopY !== this.breakDrawingLeftTopY ||
 			this.zoom !== this.breakDrawingZoom
 		)) {
+		this.breakDrawing = false;
+		cancelAnimationFrame(this.breakDrawingRequest);
+		delete this.breakDrawingRequest;
+		this.redrawOnce();
 		return;
 	}
 		
@@ -151,40 +157,47 @@ TiledCanvas.prototype.drawChunk = function drawChunk (chunkX, chunkY) {
     if (this.chunks[chunkX] && this.chunks[chunkX][chunkY]) {
         if (this.chunks[chunkX][chunkY] == "empty") return;
 	
-	this.chunks[chunkX][chunkY].lastDrawn = Date.now();
+		this.chunks[chunkX][chunkY].lastDrawn = Date.now();
 
         this.ctx.drawImage(this.chunks[chunkX][chunkY].canvas, ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
 
-        // If this chunk got recently added we want a fade effect
-        if (this.chunks[chunkX][chunkY].addedTime) {
-            var deltaAdded = Date.now() - this.chunks[chunkX][chunkY].addedTime;
-            this.ctx.globalAlpha = Math.max(0, 1 - deltaAdded / this.settings.fadeTime);
- 
-            if (deltaAdded > this.settings.fadeTime)
-                delete this.chunks[chunkX][chunkY].addedTime;
-
-            // Force a redraw to avoid optimization of not drawing
-            this.redrawOnce();
-
-            // If we have a loading image we should fade from that instead of transparency
-            if (this.loadingImage) {
-                var originalwidth = this.settings.chunkSize * this.zoom;
-                var width = originalwidth * this.ctx.globalAlpha;
-                this.ctx.drawImage(this.loadingImage,
-                    ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom + (originalwidth - width) / 2,
-                    ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom + (originalwidth - width) / 2,
-                    width,
-                    width);
-            }
-
-            this.ctx.globalAlpha = 1;
-        }
+		if (!this.breakDrawing && this.chunks[chunkX][chunkY].addedTime)
+			this.drawFade(chunkX, chunkY);
+		
     } else if(typeof this.requestUserChunk == "function") {
         this.requestChunk(chunkX, chunkY);
-        if (this.loadingImage) {
+		if (this.breakDrawing) {
+			this.ctx.fillStyle = "#456789";
+			this.ctx.fillRect(((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
+		} else if (this.loadingImage) {
             this.ctx.drawImage(this.loadingImage, ((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom, ((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom, this.settings.chunkSize * this.zoom, this.settings.chunkSize * this.zoom);
         }
     }
+};
+
+TiledCanvas.prototype.drawFade = function drawFade (chunkX, chunkY) {
+	if (!this.loadingImage) return;
+	
+	// If this chunk got recently added we want a fade effect
+	// If we are breakdrawing though, we don't wanna be fancy
+	var deltaAdded = Date.now() - this.chunks[chunkX][chunkY].addedTime;
+	this.ctx.globalAlpha = Math.max(0, 1 - deltaAdded / this.settings.fadeTime);
+
+	if (deltaAdded > this.settings.fadeTime)
+		delete this.chunks[chunkX][chunkY].addedTime;
+
+	// Force a redraw to avoid optimization of not drawing
+	this.redrawOnce();
+
+	var originalwidth = this.settings.chunkSize * this.zoom;
+	var width = originalwidth * this.ctx.globalAlpha;
+	this.ctx.drawImage(this.loadingImage,
+		((chunkX * this.settings.chunkSize) - this.leftTopX) * this.zoom + (originalwidth - width) / 2,
+		((chunkY * this.settings.chunkSize) - this.leftTopY) * this.zoom + (originalwidth - width) / 2,
+		width,
+		width);
+
+	this.ctx.globalAlpha = 1;
 };
 
 TiledCanvas.prototype.drawToCanvas = function drawToCanvas (canvas, from, to) {		
@@ -337,11 +350,22 @@ TiledCanvas.prototype.chunkCount = function chunkCount () {
 	return count;
 };
 
+TiledCanvas.prototype.isInView = function isInView (cx, cy) {
+	var minX = Math.floor(this.leftTopX / this.settings.chunkSize);
+	var minY = Math.floor(this.leftTopY / this.settings.chunkSize);
+	var maxX = Math.ceil((this.leftTopX + this.canvas.width / this.zoom) / this.settings.chunkSize);
+	var maxY = Math.ceil((this.leftTopY + this.canvas.height / this.zoom) / this.settings.chunkSize);
+
+	return cx > minX && cx < maxX &&
+	       cy > minY && cy < maxY;
+};
+
 TiledCanvas.prototype.canBeUnloaded = function canBeUnloaded (cx, cy) {
 	return this.chunks[cx] &&
 	       this.chunks[cx][cy] &&
 	       Date.now() - (this.chunks[cx][cy].lastDrawn || 0) > this.MIN_INACTIVE_UNLOAD_TIME &&
-	       !this.chunks[cx][cy].hasBeenDrawnOn;
+	       !this.chunks[cx][cy].hasBeenDrawnOn &&
+		   !this.isInView(cx, cy);
 };
 
 TiledCanvas.prototype.setUserChunk = function setUserChunk (chunkX, chunkY, image) {
