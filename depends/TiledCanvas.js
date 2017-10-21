@@ -63,7 +63,7 @@ TiledCanvas.prototype.redrawOnce = function redrawOnce () {
 // Forces a full redraw now, might be paused halfway if it takes too long
 // Cancels queued breakdraws
 // You should probably not call this function yourself, use redrawOnce
-TiledCanvas.prototype.redraw = function redraw (noclear) {
+TiledCanvas.prototype.redraw = function redraw () {
 	cancelAnimationFrame(this._redrawTimeout);
 	delete this._redrawTimeout;
 	
@@ -73,14 +73,12 @@ TiledCanvas.prototype.redraw = function redraw (noclear) {
 		return;
 	}
 
-    if (!noclear) {
-        this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+	this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
-        this.ctx.save();
-        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
-        this.ctx.restore();
-    }
+	this.ctx.save();
+	this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+	this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+	this.ctx.restore();
 	
     var startChunkX = Math.floor(this.leftTopX / this.settings.chunkSize),
         endChunkX   = Math.ceil((this.leftTopX + this.canvas.width / this.zoom) / this.settings.chunkSize),
@@ -379,6 +377,7 @@ TiledCanvas.prototype.setUserChunk = function setUserChunk (chunkX, chunkY, imag
         this.chunks[chunkX] = this.chunks[chunkX] || {};
         this.chunks[chunkX][chunkY] = "empty";
         delete this.requestChunkCallbackList[chunkX][chunkY];
+		this.redrawOnce(); // Clear the possible loading image
         return;
     }
 

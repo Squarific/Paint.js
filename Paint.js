@@ -1100,7 +1100,8 @@ Paint.prototype.zoom = function zoom (zoomFactor) {
 };
 
 Paint.prototype.zoomToPoint = function zoomToPoint(zoomFactor, pointX, pointY){
-	if((zoomFactor>0.98)&&(zoomFactor<1.02)) zoomFactor=1
+	if((zoomFactor>0.98)&&(zoomFactor<1.02)) zoomFactor=1;
+	if (zoomFactor < 0.1) zoomFactor = 0.1;
 	
 	pointX = this.public.leftTopX + (pointX / this.public.zoom);
 	pointY = this.public.leftTopY + (pointY / this.public.zoom);
@@ -1128,7 +1129,8 @@ Paint.prototype.zoomToPoint = function zoomToPoint(zoomFactor, pointX, pointY){
 }
 
 Paint.prototype.zoomAbsolute = function zoomAbsolute (zoomFactor) {
-	if((zoomFactor>0.98)&&(zoomFactor<1.02)) zoomFactor=1
+	if((zoomFactor>0.98)&&(zoomFactor<1.02)) zoomFactor=1;
+	if (zoomFactor < 0.1) zoomFactor = 0.1;
 	
 	var currentMiddleX = this.public.leftTopX + this.canvasArray[0].width / this.public.zoom / 2;
 	var currentMiddleY = this.public.leftTopY + this.canvasArray[0].height / this.public.zoom / 2;
