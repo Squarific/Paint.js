@@ -1243,6 +1243,7 @@ Paint.prototype.tools = {
 		var scaledCoords = paint.scaledCoords(targetCoords, event);
 		
 		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastZoomPoint) {
+			paint.lastTargetZoomPoint = targetCoords;
 			paint.lastZoomPoint = scaledCoords;
 			paint.lastZoomPointDelta = scaledCoords;
 		}
@@ -1269,7 +1270,7 @@ Paint.prototype.tools = {
 			var width = x1 - x2;
 			var height = Math.abs(y1 - y2);
 			
-			delta = x1 - x3;
+			delta = targetCoords[0] - paint.lastTargetZoomPoint[0]; 
 			delta *= paint.scale[0];
 			zoomFactor = 1.1;
 			if(delta < 0) { // zoom out
@@ -1280,6 +1281,7 @@ Paint.prototype.tools = {
 			}
 
 			paint.lastZoomPointDelta = scaledCoords;
+			paint.lastTargetZoomPoint = targetCoords; 
 		}	
 	},
 	select: function select (paint, event) {
@@ -1625,6 +1627,7 @@ Paint.prototype.tools = {
 		var scaledCoords = paint.scaledCoords(targetCoords, event);
 		
 		if ((event.type == "mousedown" || event.type == "touchstart") && !paint.lastChangeSizePoint && !paint.leftClick) {
+			paint.lastTargetZoomPoint = targetCoords;
 			paint.lastChangeSizePoint = scaledCoords;
 			paint.lastChangeSizePointAlt = scaledCoords;
 		}
@@ -1636,7 +1639,7 @@ Paint.prototype.tools = {
 			var x3 = paint.lastChangeSizePointAlt[0];
 			var y3 = paint.lastChangeSizePointAlt[1];
 			
-			var delta = x1 - x3;
+			var delta = targetCoords[0] - paint.lastTargetZoomPoint[0];
 			var change = 1;
 			
 			if (delta < 0) { // mouse move left
@@ -1646,6 +1649,7 @@ Paint.prototype.tools = {
 			}
 			paint.changeToolSize(paint.current_size, true);
 			paint.lastChangeSizePointAlt = scaledCoords;
+			paint.lastTargetZoomPoint = targetCoords;
 			
 			// Clear the previous mouse dot
 			paint.effectsCanvasCtx.clearRect(0, 0, paint.effectsCanvas.width, paint.effectsCanvas.height);

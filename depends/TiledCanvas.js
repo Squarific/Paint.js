@@ -238,26 +238,26 @@ TiledCanvas.prototype.relativeZoom = function relativeZoom (zoom, pointX, pointY
     this.absoluteZoom(this.zoom * zoom, pointX, pointY);
 };
 
-TiledCanvas.prototype.absoluteZoom = function absoluteZoom (zoom, pointX, pointY) {
-    
-	
-	this.reinitializeImageSmoothing();
-	
-	if (typeof pointX == "number" && typeof pointY == "number") {
-		pointX = this.leftTopX + (pointX / this.zoom);
-		pointY = this.leftTopY + (pointY / this.zoom);
-		
-		var ratioX = (pointX - this.leftTopX) / (this.canvas.width / this.zoom);
-		var ratioY = (pointY - this.leftTopY) / (this.canvas.height / this.zoom);
-		
-		var newX = pointX - ((ratioX * this.canvas.width) / zoom);
-		var newY = pointY - ((ratioY * this.canvas.height) / zoom);
-		
+TiledCanvas.prototype.absoluteZoom = function absoluteZoom (zoom, pointX, pointY) {	
+	if (typeof pointX !== "number" || typeof pointY !== "number") {
 		this.zoom = zoom;
-		this.goto(newX, newY);
-	} else {
+		this.reinitializeImageSmoothing();
 		this.redrawOnce();
+		return;
 	}
+	
+	pointX = this.leftTopX + (pointX / this.zoom);
+	pointY = this.leftTopY + (pointY / this.zoom);
+	
+	var ratioX = (pointX - this.leftTopX) / (this.canvas.width / this.zoom);
+	var ratioY = (pointY - this.leftTopY) / (this.canvas.height / this.zoom);
+	
+	var newX = pointX - ((ratioX * this.canvas.width) / zoom);
+	var newY = pointY - ((ratioY * this.canvas.height) / zoom);
+	
+	this.zoom = zoom;
+	this.reinitializeImageSmoothing();
+	this.goto(newX, newY);
 };
 
 TiledCanvas.prototype.reinitializeImageSmoothing = function reinitializeImageSmoothing () {
