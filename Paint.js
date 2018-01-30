@@ -1674,6 +1674,7 @@ Paint.prototype.tools = {
 	change_rotation: function change_rotation (paint, event) {
 		if (event == "remove") {
 			delete paint.lastChangeRotationPoint;
+			delete paint.RotationPointOnRight;
 			return;
 		}
 		
@@ -1685,6 +1686,14 @@ Paint.prototype.tools = {
 			paint.lastChangeRotationPoint = targetCoords;
 		}
 		
+		if ((event.type == "mousedown" || event.type == "touchstart")){
+			console.log("start")
+			if(targetCoords[0] > paint.canvasArray[0].width / 2)
+				paint.RotationPointOnRight = true;
+			else 
+				paint.RotationPointOnRight = false;
+		}
+		
 		if ((event.type == "mousemove" || event.type == "touchmove") && paint.lastChangeRotationPoint) {
 			var x1 = targetCoords[0];
 			var y1 = targetCoords[1];
@@ -1692,15 +1701,26 @@ Paint.prototype.tools = {
 			var x3 = paint.lastChangeRotationPoint[0];
 			var y3 = paint.lastChangeRotationPoint[1];
 			
-			var delta = x1 - x3;
-			var change = Math.abs(delta);
-			change = change > 10 ? 10 : change;
+			var p1 = {
+				x: x1,
+				y: y1
+			};
+
+			var p2 = {
+				x: paint.canvasArray[0].width / 2,
+				y: paint.canvasArray[0].height / 2
+			};
 			
-			if (delta < 0) { // mouse move left
-				paint.setRotation(paint.rotation - change * paint.scale[0] * paint.scale[1]);
-			} else if (delta > 0) {
-				paint.setRotation(paint.rotation + change * paint.scale[0] * paint.scale[1]);
+			if(paint.RotationPointOnRight){
+				p3 = p1;
+				p1 = p2;
+				p2 = p3;
 			}
+
+			var angleDeg = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+			
+			paint.setRotation(angleDeg * paint.scale[0] * paint.scale[1]);
+
 			paint.lastChangeRotationPoint = targetCoords;
 		}
 	}
